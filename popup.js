@@ -131,7 +131,7 @@ const renderPrompts = () => {
         const tags = (p.tags || [])
             .map(t => `<span class="tag-chip">${t}</span>`)
             .join('');
-        d.innerHTML = `<h3>${p.title}</h3><p>${p.description||'Keine Beschreibung'}</p><div class="tags">${tags}</div><div class="item-actions"><button title="Ausführen" class="play" data-action="run-prompt" data-id="${p.id}">${ICON_PLAY}</button><button title="Bearbeiten" data-action="edit-prompt" data-id="${p.id}">${ICON_EDIT}</button><button title="Löschen" class="delete" data-action="delete-prompt" data-id="${p.id}">${ICON_TRASH}</button><button title="Favorit umschalten" class="favorite ${p.isFavorite ? 'favorited' : ''}" data-action="toggle-favorite-prompt" data-id="${p.id}">${i}</button></div>`;
+        d.innerHTML = `<div class="item-header"><h3 title="${p.title}">${p.title}</h3><div class="item-actions"><button title="Ausführen" class="play" data-action="run-prompt" data-id="${p.id}">${ICON_PLAY}</button><button title="Bearbeiten" data-action="edit-prompt" data-id="${p.id}">${ICON_EDIT}</button><button title="Löschen" class="delete" data-action="delete-prompt" data-id="${p.id}">${ICON_TRASH}</button><button title="Favorit umschalten" class="favorite ${p.isFavorite ? 'favorited' : ''}" data-action="toggle-favorite-prompt" data-id="${p.id}">${i}</button></div></div><p>${p.description||'Keine Beschreibung'}</p><div class="tags">${tags}</div>`;
         contentList.appendChild(d);
     });
 };
@@ -159,11 +159,22 @@ const renderChains = () => {
         const tags = (c.tags || [])
             .map(t => `<span class="tag-chip">${t}</span>`)
             .join('');
-        d.innerHTML = `<h3>${c.name}</h3><p>${countText}</p><div class="tags">${tags}</div><div class="item-actions"><button title="Ausführen" class="play" data-action="run-chain" data-id="${c.id}">${ICON_PLAY}</button><button title="Bearbeiten" data-action="edit-chain" data-id="${c.id}">${ICON_EDIT}</button><button title="Löschen" class="delete" data-action="delete-chain" data-id="${c.id}">${ICON_TRASH}</button><button title="Favorit umschalten" class="favorite ${c.isFavorite ? 'favorited' : ''}" data-action="toggle-favorite-chain" data-id="${c.id}">${i}</button></div>`;
+        d.innerHTML = `<div class="item-header"><h3 title="${c.name}">${c.name}</h3><div class="item-actions"><button title="Ausführen" class="play" data-action="run-chain" data-id="${c.id}">${ICON_PLAY}</button><button title="Bearbeiten" data-action="edit-chain" data-id="${c.id}">${ICON_EDIT}</button><button title="Löschen" class="delete" data-action="delete-chain" data-id="${c.id}">${ICON_TRASH}</button><button title="Favorit umschalten" class="favorite ${c.isFavorite ? 'favorited' : ''}" data-action="toggle-favorite-chain" data-id="${c.id}">${i}</button></div></div><p>${countText}</p><div class="tags">${tags}</div>`;
         contentList.appendChild(d);
     });
 };
-const renderChainPromptInputs = () => { if (!state.chainBeingEdited) return; chainPromptsContainer.innerHTML = ''; state.chainBeingEdited.prompts.forEach((p, i) => { const d = document.createElement('div'); d.className = 'chain-prompt-item'; d.dataset.index = i; d.innerHTML = `<div class="drag-handle" draggable="true" title="Reihenfolge ändern"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M2 5H14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M2 8H14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M2 11H14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></div><textarea rows="2" placeholder="Prompt #${i + 1}" data-index="${i}">${p.text}</textarea><button type="button" class="delete" data-action="remove-prompt-from-chain" data-index="${i}" title="Prompt löschen">🗑</button>`; chainPromptsContainer.appendChild(d); autoResizeTextarea(d.querySelector('textarea')); }); };
+const renderChainPromptInputs = () => {
+    if (!state.chainBeingEdited) return;
+    chainPromptsContainer.innerHTML = '';
+    state.chainBeingEdited.prompts.forEach((p, i) => {
+        const d = document.createElement('div');
+        d.className = 'chain-prompt-item';
+        d.dataset.index = i;
+        d.innerHTML = `<div class="drag-handle" draggable="true" title="Reihenfolge ändern"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M2 5H14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M2 8H14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M2 11H14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></div><textarea rows="2" placeholder="Prompt #${i + 1}" data-index="${i}">${p.text}</textarea><button type="button" class="delete" data-action="remove-prompt-from-chain" data-index="${i}" title="Prompt löschen">${ICON_TRASH}</button>`;
+        chainPromptsContainer.appendChild(d);
+        autoResizeTextarea(d.querySelector('textarea'));
+    });
+};
 const renderVariableInputs = (v) => { variableFieldsContainer.innerHTML = ''; v.forEach(v => { const g = document.createElement('div'); g.className = 'form-group'; g.innerHTML = `<label for="var-${v}">${v}</label><input type="text" id="var-${v}" name="${v}" required class="variable-input">`; variableFieldsContainer.appendChild(g); }); };
 
 // --- EVENT HANDLERS & ACTIONS ---
