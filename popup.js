@@ -23,7 +23,7 @@ let mainView, promptEditorView, chainEditorView, variableInputView, contentList,
     settingsContainer, addNewBtn, showPromptsBtn, showChainsBtn, showSettingsBtn,
     searchBox, promptForm, promptEditorTitle, promptIdInput, promptTitleInput, promptTextInput,
     promptDescriptionInput, promptTagsInput, savePromptBtn, cancelPromptBtn, chainForm, chainEditorTitle,
-    chainIdInput, chainNameInput, chainPromptsContainer, addPromptToChainBtn,
+    chainIdInput, chainNameInput, chainTagsInput, chainPromptsContainer, addPromptToChainBtn,
     saveChainBtn, cancelChainBtn, variableFieldsContainer, executeVariablePromptBtn,
     cancelVariableInputBtn, exportBtn, importBtn, importFileInput,
     quickThemeToggleBtn;
@@ -53,6 +53,7 @@ const queryElements = () => {
     chainEditorTitle = document.getElementById('chain-editor-title');
     chainIdInput = document.getElementById('chain-id');
     chainNameInput = document.getElementById('chain-name');
+    chainTagsInput = document.getElementById('chain-tags');
     chainPromptsContainer = document.getElementById('chain-prompts-container');
     addPromptToChainBtn = document.getElementById('add-prompt-to-chain-btn');
     saveChainBtn = document.getElementById('save-chain-btn');
@@ -71,7 +72,7 @@ const storage = { get: (k) => new Promise(r => chrome.storage.local.get(k, r)), 
 const loadData = async () => {
     const d = await storage.get(['prompts', 'chains', 'theme']);
     state.prompts = (d.prompts || []).map(p => ({ ...p, tags: Array.isArray(p.tags) ? p.tags : [] }));
-    state.chains = d.chains || [];
+    state.chains = (d.chains || []).map(c => ({ ...c, tags: Array.isArray(c.tags) ? c.tags : [] }));
     state.theme = d.theme || 'dark';
 };
 
@@ -137,7 +138,10 @@ const renderChains = () => {
     const term = searchTerm.trim().toLowerCase();
     let list = [...state.chains];
     if (term) {
-        list = list.filter(c => c.name.toLowerCase().includes(term));
+        list = list.filter(c => {
+            const haystack = `${c.name} ${(c.tags || []).join(' ')}`.toLowerCase();
+            return haystack.includes(term);
+        });
     }
     if (list.length === 0) {
         contentList.innerHTML = '<p class="text-secondary">Noch keine Chains erstellt.</p>';
@@ -149,7 +153,10 @@ const renderChains = () => {
         d.className = 'item-card';
         const i = c.isFavorite ? ICON_STAR_FILLED : ICON_STAR_OUTLINE;
         const countText = `${c.prompts.length} ${c.prompts.length === 1 ? 'Prompt' : 'Prompts'}`;
-        d.innerHTML = `<h3>${c.name}</h3><p>${countText}</p><div class="item-actions"><button title="Ausführen" class="play" data-action="run-chain" data-id="${c.id}">▶</button><button title="Bearbeiten" data-action="edit-chain" data-id="${c.id}">✎</button><button title="Löschen" class="delete" data-action="delete-chain" data-id="${c.id}">🗑</button><button title="Favorit umschalten" class="favorite ${c.isFavorite ? 'favorited' : ''}" data-action="toggle-favorite-chain" data-id="${c.id}">${i}</button></div>`;
+        const tags = (c.tags || [])
+            .map(t => `<span class="tag-chip">${t}</span>`)
+            .join('');
+        d.innerHTML = `<h3>${c.name}</h3><p>${countText}</p><div class="tags">${tags}</div><div class="item-actions"><button title="Ausführen" class="play" data-action="run-chain" data-id="${c.id}">▶</button><button title="Bearbeiten" data-action="edit-chain" data-id="${c.id}">✎</button><button title="Löschen" class="delete" data-action="delete-chain" data-id="${c.id}">🗑</button><button title="Favorit umschalten" class="favorite ${c.isFavorite ? 'favorited' : ''}" data-action="toggle-favorite-chain" data-id="${c.id}">${i}</button></div>`;
         contentList.appendChild(d);
     });
 };
@@ -167,17 +174,69 @@ const handleNavClick = (v) => {
     showSettingsBtn.classList.toggle('active', v === 'settings');
     render();
 };
-const handleAddNew = () => { if (state.currentView === 'prompts') { state.currentView = 'promptEditor'; state.editingPromptId = null; promptEditorTitle.textContent = 'Prompt erstellen'; promptForm.reset(); if (promptTagsInput) promptTagsInput.value = ''; render(); autoResizeTextarea(promptTextInput); } else { state.currentView = 'chainEditor'; state.chainBeingEdited = { id: null, name: '', prompts: [{ text: '' }], isFavorite: false }; chainEditorTitle.textContent = 'Chain erstellen'; chainNameInput.value = ''; renderChainPromptInputs(); render(); } };
+const handleAddNew = () => {
+    if (state.currentView === 'prompts') {
+        state.currentView = 'promptEditor';
+        state.editingPromptId = null;
+        promptEditorTitle.textContent = 'Prompt erstellen';
+        promptForm.reset();
+        if (promptTagsInput) promptTagsInput.value = '';
+        render();
+        autoResizeTextarea(promptTextInput);
+    } else {
+        state.currentView = 'chainEditor';
+        state.chainBeingEdited = { id: null, name: '', tags: [], prompts: [{ text: '' }], isFavorite: false };
+        chainEditorTitle.textContent = 'Chain erstellen';
+        chainNameInput.value = '';
+        if (chainTagsInput) chainTagsInput.value = '';
+        renderChainPromptInputs();
+        render();
+    }
+};
 const handleListClick = async (e) => { const t = e.target.closest('button'); if (!t) return; const { action, id } = t.dataset;
     if (action === 'toggle-favorite-prompt' || action === 'toggle-favorite-chain') { const type = action.split('-')[2] + 's'; const item = state[type].find(i => i.id === id); if (item) { item.isFavorite = !item.isFavorite; await storage.set({ [type]: state[type] }); render(); } return; }
     if (action === 'run-prompt') { const p = state.prompts.find(p => p.id === id); if (!p) return; const v = extractVariables(p.text); if (v.length === 0) { executeInContentScript({ type: 'execute-prompt', text: p.text }); } else { state.pendingExecution = { type: 'prompt', data: p }; renderVariableInputs(v); state.currentView = 'variableInput'; render(); }
     } else if (action === 'run-chain') { const c = state.chains.find(c => c.id === id); if (!c) return; const a = c.prompts.map(p => p.text).join(' '); const v = extractVariables(a); if (v.length === 0) { executeInContentScript({ type: 'execute-chain', chain: c }); } else { state.pendingExecution = { type: 'chain', data: c }; renderVariableInputs(v); state.currentView = 'variableInput'; render(); }
     } else if (action === 'edit-prompt') { const p = state.prompts.find(p => p.id === id); if (!p) return; state.currentView = 'promptEditor'; state.editingPromptId = id; promptEditorTitle.textContent = 'Prompt bearbeiten'; promptIdInput.value = p.id; promptTitleInput.value = p.title; promptTextInput.value = p.text; promptDescriptionInput.value = p.description; if (promptTagsInput) promptTagsInput.value = (p.tags || []).join(', '); render(); setTimeout(() => autoResizeTextarea(promptTextInput), 0);
-    } else if (action === 'edit-chain') { const c = state.chains.find(c => c.id === id); if (!c) return; state.chainBeingEdited = JSON.parse(JSON.stringify(c)); state.currentView = 'chainEditor'; chainEditorTitle.textContent = 'Chain bearbeiten'; chainNameInput.value = c.name; renderChainPromptInputs(); render();
+    } else if (action === 'edit-chain') {
+        const c = state.chains.find(c => c.id === id);
+        if (!c) return;
+        state.chainBeingEdited = JSON.parse(JSON.stringify(c));
+        state.currentView = 'chainEditor';
+        chainEditorTitle.textContent = 'Chain bearbeiten';
+        chainNameInput.value = c.name;
+        if (chainTagsInput) chainTagsInput.value = (c.tags || []).join(', ');
+        renderChainPromptInputs();
+        render();
     } else if (action === 'delete-prompt' || action === 'delete-chain') { const type = action.split('-')[1]; const listName = type + 's'; if (confirm(`Diese(n) ${type} wirklich löschen?`)) { state[listName] = state[listName].filter(i => i.id !== id); await storage.set({ [listName]: state[listName] }); render(); } }
 };
 const handleSavePrompt = async (e) => { e.preventDefault(); if (!promptTitleInput.value || !promptTextInput.value) return; const p = state.editingPromptId ? state.prompts.find(p => p.id === state.editingPromptId) : null; const tags = promptTagsInput ? promptTagsInput.value.split(',').map(t => t.trim()).filter(Boolean) : []; const n = { id: state.editingPromptId || self.crypto.randomUUID(), title: promptTitleInput.value, text: promptTextInput.value, description: promptDescriptionInput.value, tags, isFavorite: p ? p.isFavorite : false }; if (state.editingPromptId) { state.prompts = state.prompts.map(p => p.id === state.editingPromptId ? n : p); } else { state.prompts.push(n); } await storage.set({ prompts: state.prompts }); state.editingPromptId = null; handleNavClick('prompts'); };
-const handleSaveChain = async (e) => { e.preventDefault(); const c = state.chainBeingEdited; if (!c) return; c.name = chainNameInput.value; if (!c.name) { alert('Ein Name für die Chain ist ein Pflichtfeld.'); return; } c.prompts = c.prompts.filter(p => p.text.trim() !== ''); if (c.prompts.length === 0) { alert('Eine Chain muss mindestens einen nicht-leeren Prompt enthalten.'); return; } const n = { ...c, id: c.id || self.crypto.randomUUID() }; const i = state.chains.findIndex(c => c.id === n.id); if (i > -1) { state.chains[i] = n; } else { state.chains.push(n); } await storage.set({ chains: state.chains }); state.chainBeingEdited = null; handleNavClick('chains'); };
+const handleSaveChain = async (e) => {
+    e.preventDefault();
+    const c = state.chainBeingEdited;
+    if (!c) return;
+    c.name = chainNameInput.value;
+    if (!c.name) {
+        alert('Ein Name für die Chain ist ein Pflichtfeld.');
+        return;
+    }
+    c.tags = chainTagsInput ? chainTagsInput.value.split(',').map(t => t.trim()).filter(Boolean) : [];
+    c.prompts = c.prompts.filter(p => p.text.trim() !== '');
+    if (c.prompts.length === 0) {
+        alert('Eine Chain muss mindestens einen nicht-leeren Prompt enthalten.');
+        return;
+    }
+    const n = { ...c, id: c.id || self.crypto.randomUUID() };
+    const i = state.chains.findIndex(c => c.id === n.id);
+    if (i > -1) {
+        state.chains[i] = n;
+    } else {
+        state.chains.push(n);
+    }
+    await storage.set({ chains: state.chains });
+    state.chainBeingEdited = null;
+    handleNavClick('chains');
+};
 const handleAddPromptToChain = (e) => { e.preventDefault(); if (!state.chainBeingEdited) return; state.chainBeingEdited.prompts.push({ text: '' }); renderChainPromptInputs(); };
 const handleRemovePromptFromChain = (e) => { const t = e.target.closest('button[data-action="remove-prompt-from-chain"]'); if (!t || !state.chainBeingEdited) return; e.preventDefault(); const i = parseInt(t.dataset.index); state.chainBeingEdited.prompts.splice(i, 1); renderChainPromptInputs(); };
 const handleVariableSubmit = (e) => { e.preventDefault(); if (!state.pendingExecution) return; const v = {}; variableFieldsContainer.querySelectorAll('.variable-input').forEach(i => { v[i.name] = i.value; }); const { type, data } = state.pendingExecution; const sub = t => { let p = t; for (const n in v) { p = p.replace(new RegExp(`{{\\s*${n}\\s*}}`, 'g'), v[n]); } return p; }; if (type === 'prompt') { executeInContentScript({ type: 'execute-prompt', text: sub(data.text) }); } else if (type === 'chain') { const p = { ...data, prompts: data.prompts.map(p => ({ ...p, text: sub(p.text) })) }; executeInContentScript({ type: 'execute-chain', chain: p }); } state.pendingExecution = null; handleNavClick(type === 'prompt' ? 'prompts' : 'chains'); };
@@ -209,7 +268,7 @@ const handleImportFile = async () => {
         if (!Array.isArray(data.prompts) || !Array.isArray(data.chains)) throw new Error('invalid');
         if (!confirm('Import überschreibt alle vorhandenen Daten. Fortfahren?')) { importFileInput.value = ''; return; }
         state.prompts = data.prompts.map(p => ({ ...p, tags: Array.isArray(p.tags) ? p.tags : [] }));
-        state.chains = data.chains;
+        state.chains = data.chains.map(c => ({ ...c, tags: Array.isArray(c.tags) ? c.tags : [] }));
         await storage.set({ prompts: state.prompts, chains: state.chains });
         render();
     } catch (e) {
