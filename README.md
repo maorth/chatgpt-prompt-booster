@@ -4,9 +4,10 @@ A Chrome extension for managing and executing ChatGPT prompts and prompt chains.
 
 ## Features
 
-- **Store prompts locally** in `chrome.storage` with title, text, description, and favorite flag.
+- **Store prompts locally** in `chrome.storage` with title, text, description, tags and favorite flag.
 - **Create prompt chains** consisting of multiple prompts executed sequentially.
 - **Variable placeholders**: prompts can contain `{{variable}}` tokens that are filled in when executed.
+- **Tagging**: assign comma-separated tags to prompts and search by them.
 - **Popup interface**: edit, delete, favorite, and run prompts or chains.
 - **Content script integration**: automatically sends prompts to an open ChatGPT tab and waits for the response.
 - **Light/Dark theme switch**: choose between light and dark modes from the popup settings.
