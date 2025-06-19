@@ -8,7 +8,8 @@ let state = {
     prompts: [],
     chains: [],
     pendingExecution: null,
-    chainBeingEdited: null 
+    chainBeingEdited: null,
+    theme: 'dark'
 };
 let draggedItemIndex = null;
 
@@ -19,7 +20,7 @@ let mainView, promptEditorView, chainEditorView, variableInputView, contentList,
     promptDescriptionInput, savePromptBtn, cancelPromptBtn, chainForm, chainEditorTitle,
     chainIdInput, chainNameInput, chainPromptsContainer, addPromptToChainBtn,
     saveChainBtn, cancelChainBtn, variableFieldsContainer, executeVariablePromptBtn,
-    cancelVariableInputBtn, exportBtn, importBtn, importFileInput;
+    cancelVariableInputBtn, exportBtn, importBtn, importFileInput, toggleThemeBtn;
 
 const queryElements = () => {
     mainView = document.getElementById('main-view');
@@ -54,11 +55,17 @@ const queryElements = () => {
     exportBtn = document.getElementById('export-btn');
     importBtn = document.getElementById('import-btn');
     importFileInput = document.getElementById('import-file');
+    toggleThemeBtn = document.getElementById('toggle-theme-btn');
 };
 
 // --- DATA HELPERS & RENDERERS ---
 const storage = { get: (k) => new Promise(r => chrome.storage.local.get(k, r)), set: (i) => new Promise(r => chrome.storage.local.set(i, r)) };
-const loadData = async () => { const d = await storage.get(['prompts', 'chains']); state.prompts = d.prompts || []; state.chains = d.chains || []; };
+const loadData = async () => {
+    const d = await storage.get(['prompts', 'chains', 'theme']);
+    state.prompts = d.prompts || [];
+    state.chains = d.chains || [];
+    state.theme = d.theme || 'dark';
+};
 
 const render = () => {
     const isMainView = !['promptEditor', 'chainEditor', 'variableInput'].includes(state.currentView);
@@ -161,10 +168,25 @@ const handleImportFile = async () => {
     importFileInput.value = '';
 };
 
+const applyTheme = () => {
+    // toggle class on the root <html> element so :root.light-theme rules apply
+    document.documentElement.classList.toggle('light-theme', state.theme === 'light');
+    if (toggleThemeBtn) {
+        toggleThemeBtn.textContent = state.theme === 'light' ? 'Dunkler Modus' : 'Heller Modus';
+    }
+};
+
+const handleThemeToggle = async () => {
+    state.theme = state.theme === 'light' ? 'dark' : 'light';
+    applyTheme();
+    await storage.set({ theme: state.theme });
+};
+
 // --- INITIALIZATION ---
 document.addEventListener('DOMContentLoaded', async () => {
     queryElements();
     await loadData();
+    applyTheme();
     render();
 
     showPromptsBtn.addEventListener('click', () => handleNavClick('prompts'));
@@ -189,4 +211,5 @@ document.addEventListener('DOMContentLoaded', async () => {
     exportBtn.addEventListener('click', handleExport);
     importBtn.addEventListener('click', handleImportClick);
     importFileInput.addEventListener('change', handleImportFile);
+    toggleThemeBtn.addEventListener('click', handleThemeToggle);
 });
