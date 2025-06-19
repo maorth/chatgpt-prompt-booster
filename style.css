@@ -51,6 +51,11 @@ nav button.active { background-color: var(--accent); color: var(--text-primary);
 .item-actions button.favorite { margin-left: auto; background-color: transparent; color: var(--text-secondary); }
 .item-actions button.favorite:hover { color: var(--text-primary); background-color: var(--bg-tertiary); }
 .item-actions button.favorite.favorited { color: var(--favorite); }
+.item-actions button svg {
+    width: 16px;
+    height: 16px;
+    pointer-events: none;
+}
 
 .form-group { margin-bottom: 1rem; }
 .form-group label { display: block; font-size: 0.875rem; color: var(--text-secondary); margin-bottom: 0.25rem; }
