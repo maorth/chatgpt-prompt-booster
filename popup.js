@@ -12,11 +12,12 @@ let state = {
     theme: 'dark'
 };
 let draggedItemIndex = null;
+let searchTerm = '';
 
 // --- DOM ELEMENT QUERY ---
 let mainView, promptEditorView, chainEditorView, variableInputView, contentList,
     settingsContainer, addNewBtn, showPromptsBtn, showChainsBtn, showSettingsBtn,
-    promptForm, promptEditorTitle, promptIdInput, promptTitleInput, promptTextInput,
+    searchBox, promptForm, promptEditorTitle, promptIdInput, promptTitleInput, promptTextInput,
     promptDescriptionInput, savePromptBtn, cancelPromptBtn, chainForm, chainEditorTitle,
     chainIdInput, chainNameInput, chainPromptsContainer, addPromptToChainBtn,
     saveChainBtn, cancelChainBtn, variableFieldsContainer, executeVariablePromptBtn,
@@ -28,6 +29,7 @@ const queryElements = () => {
     chainEditorView = document.getElementById('chain-editor-view');
     variableInputView = document.getElementById('variable-input-view');
     contentList = document.getElementById('content-list');
+    searchBox = document.getElementById('search-box');
     settingsContainer = document.getElementById('settings-container');
     addNewBtn = document.getElementById('add-new-btn');
     showPromptsBtn = document.getElementById('show-prompts-btn');
@@ -96,13 +98,48 @@ const render = () => {
         }
     }
 };
-const renderPrompts = () => { contentList.innerHTML = ''; if (state.prompts.length === 0) { contentList.innerHTML = '<p class="text-secondary">Noch keine Prompts erstellt.</p>'; return; }
-    const sorted = [...state.prompts].sort((a, b) => (b.isFavorite || 0) - (a.isFavorite || 0));
-    sorted.forEach(p => { const d = document.createElement('div'); d.className = 'item-card'; const i = p.isFavorite ? ICON_STAR_FILLED : ICON_STAR_OUTLINE; d.innerHTML = `<h3>${p.title}</h3><p>${p.description||'Keine Beschreibung'}</p><div class="item-actions"><button title="Ausführen" class="play" data-action="run-prompt" data-id="${p.id}">▶</button><button title="Bearbeiten" data-action="edit-prompt" data-id="${p.id}">✎</button><button title="Löschen" class="delete" data-action="delete-prompt" data-id="${p.id}">🗑</button><button title="Favorit umschalten" class="favorite ${p.isFavorite ? 'favorited' : ''}" data-action="toggle-favorite-prompt" data-id="${p.id}">${i}</button></div>`; contentList.appendChild(d); });
+const renderPrompts = () => {
+    contentList.innerHTML = '';
+    const term = searchTerm.trim().toLowerCase();
+    let list = [...state.prompts];
+    if (term) {
+        list = list.filter(p =>
+            `${p.title} ${(p.description || '')}`.toLowerCase().includes(term)
+        );
+    }
+    if (list.length === 0) {
+        contentList.innerHTML = '<p class="text-secondary">Noch keine Prompts erstellt.</p>';
+        return;
+    }
+    const sorted = list.sort((a, b) => (b.isFavorite || 0) - (a.isFavorite || 0));
+    sorted.forEach(p => {
+        const d = document.createElement('div');
+        d.className = 'item-card';
+        const i = p.isFavorite ? ICON_STAR_FILLED : ICON_STAR_OUTLINE;
+        d.innerHTML = `<h3>${p.title}</h3><p>${p.description||'Keine Beschreibung'}</p><div class="item-actions"><button title="Ausführen" class="play" data-action="run-prompt" data-id="${p.id}">▶</button><button title="Bearbeiten" data-action="edit-prompt" data-id="${p.id}">✎</button><button title="Löschen" class="delete" data-action="delete-prompt" data-id="${p.id}">🗑</button><button title="Favorit umschalten" class="favorite ${p.isFavorite ? 'favorited' : ''}" data-action="toggle-favorite-prompt" data-id="${p.id}">${i}</button></div>`;
+        contentList.appendChild(d);
+    });
 };
-const renderChains = () => { contentList.innerHTML = ''; if (state.chains.length === 0) { contentList.innerHTML = '<p class="text-secondary">Noch keine Chains erstellt.</p>'; return; }
-    const sorted = [...state.chains].sort((a, b) => (b.isFavorite || 0) - (a.isFavorite || 0));
-    sorted.forEach(c => { const d = document.createElement('div'); d.className = 'item-card'; const i = c.isFavorite ? ICON_STAR_FILLED : ICON_STAR_OUTLINE; d.innerHTML = `<h3>${c.name}</h3><p>${c.prompts.length} Prompt(s) in dieser Kette</p><div class="item-actions"><button title="Ausführen" class="play" data-action="run-chain" data-id="${c.id}">▶</button><button title="Bearbeiten" data-action="edit-chain" data-id="${c.id}">✎</button><button title="Löschen" class="delete" data-action="delete-chain" data-id="${c.id}">🗑</button><button title="Favorit umschalten" class="favorite ${c.isFavorite ? 'favorited' : ''}" data-action="toggle-favorite-chain" data-id="${c.id}">${i}</button></div>`; contentList.appendChild(d); });
+
+const renderChains = () => {
+    contentList.innerHTML = '';
+    const term = searchTerm.trim().toLowerCase();
+    let list = [...state.chains];
+    if (term) {
+        list = list.filter(c => c.name.toLowerCase().includes(term));
+    }
+    if (list.length === 0) {
+        contentList.innerHTML = '<p class="text-secondary">Noch keine Chains erstellt.</p>';
+        return;
+    }
+    const sorted = list.sort((a, b) => (b.isFavorite || 0) - (a.isFavorite || 0));
+    sorted.forEach(c => {
+        const d = document.createElement('div');
+        d.className = 'item-card';
+        const i = c.isFavorite ? ICON_STAR_FILLED : ICON_STAR_OUTLINE;
+        d.innerHTML = `<h3>${c.name}</h3><p>${c.prompts.length} Prompt(s) in dieser Kette</p><div class="item-actions"><button title="Ausführen" class="play" data-action="run-chain" data-id="${c.id}">▶</button><button title="Bearbeiten" data-action="edit-chain" data-id="${c.id}">✎</button><button title="Löschen" class="delete" data-action="delete-chain" data-id="${c.id}">🗑</button><button title="Favorit umschalten" class="favorite ${c.isFavorite ? 'favorited' : ''}" data-action="toggle-favorite-chain" data-id="${c.id}">${i}</button></div>`;
+        contentList.appendChild(d);
+    });
 };
 const renderChainPromptInputs = () => { if (!state.chainBeingEdited) return; chainPromptsContainer.innerHTML = ''; state.chainBeingEdited.prompts.forEach((p, i) => { const d = document.createElement('div'); d.className = 'chain-prompt-item'; d.dataset.index = i; d.innerHTML = `<div class="drag-handle" draggable="true" title="Reihenfolge ändern"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M2 5H14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M2 8H14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M2 11H14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></div><textarea rows="2" placeholder="Prompt #${i + 1}" data-index="${i}">${p.text}</textarea><button type="button" class="delete" data-action="remove-prompt-from-chain" data-index="${i}" title="Prompt löschen">🗑</button>`; chainPromptsContainer.appendChild(d); autoResizeTextarea(d.querySelector('textarea')); }); };
 const renderVariableInputs = (v) => { variableFieldsContainer.innerHTML = ''; v.forEach(v => { const g = document.createElement('div'); g.className = 'form-group'; g.innerHTML = `<label for="var-${v}">${v}</label><input type="text" id="var-${v}" name="${v}" required class="variable-input">`; variableFieldsContainer.appendChild(g); }); };
@@ -110,6 +147,7 @@ const renderVariableInputs = (v) => { variableFieldsContainer.innerHTML = ''; v.
 // --- EVENT HANDLERS & ACTIONS ---
 const autoResizeTextarea = (t) => { if (t) { t.style.height = 'auto'; t.style.height = `${t.scrollHeight}px`; } };
 const extractVariables = (t) => { const r = /{{\s*([a-zA-Z0-9_]+)\s*}}/g; const m = t.match(r) || []; return Array.from(new Set(m.map(v => v.replace(/[{}]/g, '').trim()))); };
+const handleSearchInput = () => { searchTerm = searchBox.value; render(); };
 const handleNavClick = (v) => {
     state.currentView = v;
     showPromptsBtn.classList.toggle('active', v === 'prompts');
@@ -193,6 +231,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     showSettingsBtn.addEventListener('click', () => handleNavClick('settings'));
     addNewBtn.addEventListener('click', handleAddNew);
     contentList.addEventListener('click', handleListClick);
+    searchBox.addEventListener('input', handleSearchInput);
     savePromptBtn.addEventListener('click', handleSavePrompt);
     cancelPromptBtn.addEventListener('click', () => { state.editingPromptId = null; handleNavClick('prompts'); });
     saveChainBtn.addEventListener('click', handleSaveChain);
