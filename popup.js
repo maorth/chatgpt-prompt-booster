@@ -8,6 +8,7 @@ const ICON_UPLOAD = `<svg width="16" height="16" viewBox="0 0 24 24" fill="curre
 const ICON_PLAY = `<svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M4 3v10l9-5-9-5z"/></svg>`;
 const ICON_EDIT = `<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25z"/><path d="M20.71 7.04a1 1 0 000-1.41l-2.34-2.34a1 1 0 00-1.41 0L15.13 4.95l3.75 3.75 1.83-1.66z"/></svg>`;
 const ICON_TRASH = `<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M6 7v12a2 2 0 002 2h8a2 2 0 002-2V7"/><path d="M4 7h16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 7V4h6v3"/></svg>`;
+const ICON_PLUS = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 
 // --- STATE & CONFIG ---
 let state = {
@@ -92,13 +93,17 @@ const render = () => {
         showSettingsBtn.classList.toggle('active', state.currentView === 'settings');
         if (state.currentView === 'prompts') {
             renderPrompts();
-            addNewBtn.textContent = 'Neuen Prompt erstellen';
+            addNewBtn.innerHTML = ICON_PLUS;
+            addNewBtn.title = 'Neuen Prompt erstellen';
+            addNewBtn.setAttribute('aria-label', 'Neuen Prompt erstellen');
             addNewBtn.classList.remove('hidden');
             contentList.classList.remove('hidden');
             settingsContainer.classList.add('hidden');
         } else if (state.currentView === 'chains') {
             renderChains();
-            addNewBtn.textContent = 'Neue Chain erstellen';
+            addNewBtn.innerHTML = ICON_PLUS;
+            addNewBtn.title = 'Neue Chain erstellen';
+            addNewBtn.setAttribute('aria-label', 'Neue Chain erstellen');
             addNewBtn.classList.remove('hidden');
             contentList.classList.remove('hidden');
             settingsContainer.classList.add('hidden');
