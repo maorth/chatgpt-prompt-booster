@@ -23,7 +23,7 @@ let mainView, promptEditorView, chainEditorView, variableInputView, contentList,
     promptDescriptionInput, promptTagsInput, savePromptBtn, cancelPromptBtn, chainForm, chainEditorTitle,
     chainIdInput, chainNameInput, chainPromptsContainer, addPromptToChainBtn,
     saveChainBtn, cancelChainBtn, variableFieldsContainer, executeVariablePromptBtn,
-    cancelVariableInputBtn, exportBtn, importBtn, importFileInput, toggleThemeBtn,
+    cancelVariableInputBtn, exportBtn, importBtn, importFileInput,
     quickThemeToggleBtn;
 
 const queryElements = () => {
@@ -61,7 +61,6 @@ const queryElements = () => {
     exportBtn = document.getElementById('export-btn');
     importBtn = document.getElementById('import-btn');
     importFileInput = document.getElementById('import-file');
-    toggleThemeBtn = document.getElementById('toggle-theme-btn');
     quickThemeToggleBtn = document.getElementById('quick-theme-toggle');
 };
 
@@ -216,11 +215,6 @@ const applyTheme = () => {
     // Apply the theme class to the root element so the CSS variables defined
     // in :root.light-theme take effect.
     document.documentElement.classList.toggle('light-theme', state.theme === 'light');
-    if (toggleThemeBtn) {
-        toggleThemeBtn.textContent = state.theme === 'light'
-            ? 'Dunkler Modus'
-            : 'Heller Modus';
-    }
     if (quickThemeToggleBtn) {
         quickThemeToggleBtn.innerHTML = state.theme === 'light' ? ICON_MOON : ICON_SUN;
     }
@@ -262,7 +256,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     exportBtn.addEventListener('click', handleExport);
     importBtn.addEventListener('click', handleImportClick);
     importFileInput.addEventListener('change', handleImportFile);
-    toggleThemeBtn.addEventListener('click', handleThemeToggle);
     if (quickThemeToggleBtn) quickThemeToggleBtn.addEventListener('click', handleThemeToggle);
     document.addEventListener('keydown', (e) => {
         if (e.altKey && e.key.toLowerCase() === 'l') {
