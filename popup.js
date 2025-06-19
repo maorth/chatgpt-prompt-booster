@@ -59,7 +59,24 @@ const queryElements = () => {
 };
 
 // --- DATA HELPERS & RENDERERS ---
-const storage = { get: (k) => new Promise(r => chrome.storage.local.get(k, r)), set: (i) => new Promise(r => chrome.storage.local.set(i, r)) };
+const storage = {
+    get: (keys) => new Promise((resolve) => {
+        if (chrome?.storage?.local) {
+            chrome.storage.local.get(keys, (d) => resolve(d));
+        } else {
+            const data = Array.isArray(keys) ? keys.reduce((acc, k) => ({ ...acc, [k]: localStorage.getItem(k) }), {}) : { [keys]: localStorage.getItem(keys) };
+            resolve(data);
+        }
+    }),
+    set: (items) => new Promise((resolve) => {
+        if (chrome?.storage?.local) {
+            chrome.storage.local.set(items, resolve);
+        } else {
+            Object.entries(items).forEach(([k, v]) => localStorage.setItem(k, v));
+            resolve();
+        }
+    })
+};
 const loadData = async () => {
     const d = await storage.get(['prompts', 'chains', 'theme']);
     state.prompts = d.prompts || [];
@@ -169,10 +186,12 @@ const handleImportFile = async () => {
 };
 
 const applyTheme = () => {
-    // toggle class on the root <html> element so :root.light-theme rules apply
-    document.documentElement.classList.toggle('light-theme', state.theme === 'light');
+    const isLight = state.theme === 'light';
+    // apply class on both <html> and <body> to be safe
+    document.documentElement.classList.toggle('light-theme', isLight);
+    document.body.classList.toggle('light-theme', isLight);
     if (toggleThemeBtn) {
-        toggleThemeBtn.textContent = state.theme === 'light' ? 'Dunkler Modus' : 'Heller Modus';
+        toggleThemeBtn.textContent = isLight ? 'Dunkler Modus' : 'Heller Modus';
     }
 };
 
