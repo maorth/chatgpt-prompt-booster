@@ -3,6 +3,8 @@ const ICON_STAR_FILLED = `<svg width="16" height="16" viewBox="0 0 24 24" fill="
 const ICON_STAR_OUTLINE = `<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M22 9.24l-7.19-.62L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21 12 17.27 18.18 21l-1.63-7.03L22 9.24zM12 15.4l-3.76 2.27 1-4.28-3.32-2.88 4.38-.38L12 6.1l1.71 4.04 4.38.38-3.32 2.88 1 4.28L12 15.4z"/></svg>`;
 const ICON_MOON = `<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M21 12.79A9 9 0 1111.21 3c-.11.73-.21 1.47-.21 2.21a9 9 0 009 9c.74 0 1.48-.1 2.21-.21z"/></svg>`;
 const ICON_SUN = `<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M12 4.5V2m0 20v-2.5M4.5 12H2m20 0h-2.5M5.636 5.636L4.222 4.222m15.556 15.556l-1.414-1.414M5.636 18.364l-1.414 1.414m15.556-15.556l-1.414 1.414M12 8a4 4 0 100 8 4 4 0 000-8z" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+const ICON_DOWNLOAD = `<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2"/><path d="M7 10l5 5 5-5" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 15V3" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+const ICON_UPLOAD = `<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M4 8v2a2 2 0 002 2h12a2 2 0 002-2V8"/><path d="M17 14l-5-5-5 5" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 9v12" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 
 // --- STATE & CONFIG ---
 let state = {
@@ -79,6 +81,7 @@ const render = () => {
     promptEditorView.classList.toggle('hidden', state.currentView !== 'promptEditor');
     chainEditorView.classList.toggle('hidden', state.currentView !== 'chainEditor');
     variableInputView.classList.toggle('hidden', state.currentView !== 'variableInput');
+    searchBox.classList.toggle('hidden', !isMainView || state.currentView === 'settings');
     if (isMainView) {
         showPromptsBtn.classList.toggle('active', state.currentView === 'prompts');
         showChainsBtn.classList.toggle('active', state.currentView === 'chains');
@@ -231,6 +234,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     queryElements();
     await loadData();
     applyTheme();
+    if (exportBtn) exportBtn.querySelector('.btn-icon').innerHTML = ICON_DOWNLOAD;
+    if (importBtn) importBtn.querySelector('.btn-icon').innerHTML = ICON_UPLOAD;
     render();
 
     showPromptsBtn.addEventListener('click', () => handleNavClick('prompts'));
