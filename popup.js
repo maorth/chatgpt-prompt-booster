@@ -13,7 +13,13 @@ let state = {
 let draggedItemIndex = null;
 
 // --- DOM ELEMENT QUERY ---
-let mainView, promptEditorView, chainEditorView, variableInputView, contentList, addNewBtn, showPromptsBtn, showChainsBtn, promptForm, promptEditorTitle, promptIdInput, promptTitleInput, promptTextInput, promptDescriptionInput, savePromptBtn, cancelPromptBtn, chainForm, chainEditorTitle, chainIdInput, chainNameInput, chainPromptsContainer, addPromptToChainBtn, saveChainBtn, cancelChainBtn, variableFieldsContainer, executeVariablePromptBtn, cancelVariableInputBtn;
+let mainView, promptEditorView, chainEditorView, variableInputView, contentList,
+    settingsContainer, addNewBtn, showPromptsBtn, showChainsBtn, showSettingsBtn,
+    promptForm, promptEditorTitle, promptIdInput, promptTitleInput, promptTextInput,
+    promptDescriptionInput, savePromptBtn, cancelPromptBtn, chainForm, chainEditorTitle,
+    chainIdInput, chainNameInput, chainPromptsContainer, addPromptToChainBtn,
+    saveChainBtn, cancelChainBtn, variableFieldsContainer, executeVariablePromptBtn,
+    cancelVariableInputBtn, exportBtn, importBtn, importFileInput;
 
 const queryElements = () => {
     mainView = document.getElementById('main-view');
@@ -21,9 +27,11 @@ const queryElements = () => {
     chainEditorView = document.getElementById('chain-editor-view');
     variableInputView = document.getElementById('variable-input-view');
     contentList = document.getElementById('content-list');
+    settingsContainer = document.getElementById('settings-container');
     addNewBtn = document.getElementById('add-new-btn');
     showPromptsBtn = document.getElementById('show-prompts-btn');
     showChainsBtn = document.getElementById('show-chains-btn');
+    showSettingsBtn = document.getElementById('show-settings-btn');
     promptForm = document.getElementById('prompt-form');
     promptEditorTitle = document.getElementById('prompt-editor-title');
     promptIdInput = document.getElementById('prompt-id');
@@ -43,6 +51,9 @@ const queryElements = () => {
     variableFieldsContainer = document.getElementById('variable-fields-container');
     executeVariablePromptBtn = document.getElementById('execute-variable-prompt-btn');
     cancelVariableInputBtn = document.getElementById('cancel-variable-input-btn');
+    exportBtn = document.getElementById('export-btn');
+    importBtn = document.getElementById('import-btn');
+    importFileInput = document.getElementById('import-file');
 };
 
 // --- DATA HELPERS & RENDERERS ---
@@ -56,8 +67,26 @@ const render = () => {
     chainEditorView.classList.toggle('hidden', state.currentView !== 'chainEditor');
     variableInputView.classList.toggle('hidden', state.currentView !== 'variableInput');
     if (isMainView) {
-        if (state.currentView === 'prompts') { renderPrompts(); addNewBtn.textContent = 'Neuen Prompt erstellen'; } 
-        else if (state.currentView === 'chains') { renderChains(); addNewBtn.textContent = 'Neue Chain erstellen'; }
+        showPromptsBtn.classList.toggle('active', state.currentView === 'prompts');
+        showChainsBtn.classList.toggle('active', state.currentView === 'chains');
+        showSettingsBtn.classList.toggle('active', state.currentView === 'settings');
+        if (state.currentView === 'prompts') {
+            renderPrompts();
+            addNewBtn.textContent = 'Neuen Prompt erstellen';
+            addNewBtn.classList.remove('hidden');
+            contentList.classList.remove('hidden');
+            settingsContainer.classList.add('hidden');
+        } else if (state.currentView === 'chains') {
+            renderChains();
+            addNewBtn.textContent = 'Neue Chain erstellen';
+            addNewBtn.classList.remove('hidden');
+            contentList.classList.remove('hidden');
+            settingsContainer.classList.add('hidden');
+        } else if (state.currentView === 'settings') {
+            addNewBtn.classList.add('hidden');
+            contentList.classList.add('hidden');
+            settingsContainer.classList.remove('hidden');
+        }
     }
 };
 const renderPrompts = () => { contentList.innerHTML = ''; if (state.prompts.length === 0) { contentList.innerHTML = '<p class="text-secondary">Noch keine Prompts erstellt.</p>'; return; }
@@ -74,7 +103,13 @@ const renderVariableInputs = (v) => { variableFieldsContainer.innerHTML = ''; v.
 // --- EVENT HANDLERS & ACTIONS ---
 const autoResizeTextarea = (t) => { if (t) { t.style.height = 'auto'; t.style.height = `${t.scrollHeight}px`; } };
 const extractVariables = (t) => { const r = /{{\s*([a-zA-Z0-9_]+)\s*}}/g; const m = t.match(r) || []; return Array.from(new Set(m.map(v => v.replace(/[{}]/g, '').trim()))); };
-const handleNavClick = (v) => { state.currentView = v; showPromptsBtn.classList.toggle('active', v === 'prompts'); showChainsBtn.classList.toggle('active', v === 'chains'); render(); };
+const handleNavClick = (v) => {
+    state.currentView = v;
+    showPromptsBtn.classList.toggle('active', v === 'prompts');
+    showChainsBtn.classList.toggle('active', v === 'chains');
+    showSettingsBtn.classList.toggle('active', v === 'settings');
+    render();
+};
 const handleAddNew = () => { if (state.currentView === 'prompts') { state.currentView = 'promptEditor'; state.editingPromptId = null; promptEditorTitle.textContent = 'Prompt erstellen'; promptForm.reset(); render(); autoResizeTextarea(promptTextInput); } else { state.currentView = 'chainEditor'; state.chainBeingEdited = { id: null, name: '', prompts: [{ text: '' }], isFavorite: false }; chainEditorTitle.textContent = 'Chain erstellen'; chainNameInput.value = ''; renderChainPromptInputs(); render(); } };
 const handleListClick = async (e) => { const t = e.target.closest('button'); if (!t) return; const { action, id } = t.dataset;
     if (action === 'toggle-favorite-prompt' || action === 'toggle-favorite-chain') { const type = action.split('-')[2] + 's'; const item = state[type].find(i => i.id === id); if (item) { item.isFavorite = !item.isFavorite; await storage.set({ [type]: state[type] }); render(); } return; }
@@ -95,6 +130,37 @@ const handleDragEnd = (e) => { document.querySelectorAll('.chain-prompt-item.dra
 const handleDragOver = (e) => { e.preventDefault(); const o = e.target.closest('.chain-prompt-item'); document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over')); if (o) o.classList.add('drag-over'); };
 const handleDrop = (e) => { e.preventDefault(); document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over')); const d = e.target.closest('.chain-prompt-item'); if (d === null || draggedItemIndex === null || !state.chainBeingEdited) return; const i = parseInt(d.dataset.index); if (draggedItemIndex === i) return; const [r] = state.chainBeingEdited.prompts.splice(draggedItemIndex, 1); state.chainBeingEdited.prompts.splice(i, 0, r); renderChainPromptInputs(); };
 
+const handleExport = () => {
+    const data = { prompts: state.prompts, chains: state.chains };
+    const date = new Date().toISOString().slice(0, 10);
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `prompt-manager-backup-${date}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+};
+
+const handleImportClick = () => { importFileInput.click(); };
+const handleImportFile = async () => {
+    const file = importFileInput.files[0];
+    if (!file) return;
+    try {
+        const text = await file.text();
+        const data = JSON.parse(text);
+        if (!Array.isArray(data.prompts) || !Array.isArray(data.chains)) throw new Error('invalid');
+        if (!confirm('Import überschreibt alle vorhandenen Daten. Fortfahren?')) { importFileInput.value = ''; return; }
+        state.prompts = data.prompts;
+        state.chains = data.chains;
+        await storage.set({ prompts: state.prompts, chains: state.chains });
+        render();
+    } catch (e) {
+        alert('Fehler beim Import der Datei.');
+    }
+    importFileInput.value = '';
+};
+
 // --- INITIALIZATION ---
 document.addEventListener('DOMContentLoaded', async () => {
     queryElements();
@@ -103,6 +169,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     showPromptsBtn.addEventListener('click', () => handleNavClick('prompts'));
     showChainsBtn.addEventListener('click', () => handleNavClick('chains'));
+    showSettingsBtn.addEventListener('click', () => handleNavClick('settings'));
     addNewBtn.addEventListener('click', handleAddNew);
     contentList.addEventListener('click', handleListClick);
     savePromptBtn.addEventListener('click', handleSavePrompt);
@@ -119,4 +186,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     chainPromptsContainer.addEventListener('dragend', handleDragEnd);
     chainPromptsContainer.addEventListener('dragover', handleDragOver);
     chainPromptsContainer.addEventListener('drop', handleDrop);
+    exportBtn.addEventListener('click', handleExport);
+    importBtn.addEventListener('click', handleImportClick);
+    importFileInput.addEventListener('change', handleImportFile);
 });
