@@ -124,7 +124,10 @@ const renderPrompts = () => {
         const d = document.createElement('div');
         d.className = 'item-card';
         const i = p.isFavorite ? ICON_STAR_FILLED : ICON_STAR_OUTLINE;
-        d.innerHTML = `<h3>${p.title}</h3><p>${p.description||'Keine Beschreibung'}</p><p class="tags">${(p.tags||[]).join(', ')}</p><div class="item-actions"><button title="Ausführen" class="play" data-action="run-prompt" data-id="${p.id}">▶</button><button title="Bearbeiten" data-action="edit-prompt" data-id="${p.id}">✎</button><button title="Löschen" class="delete" data-action="delete-prompt" data-id="${p.id}">🗑</button><button title="Favorit umschalten" class="favorite ${p.isFavorite ? 'favorited' : ''}" data-action="toggle-favorite-prompt" data-id="${p.id}">${i}</button></div>`;
+        const tags = (p.tags || [])
+            .map(t => `<span class="tag-chip">${t}</span>`)
+            .join('');
+        d.innerHTML = `<h3>${p.title}</h3><p>${p.description||'Keine Beschreibung'}</p><div class="tags">${tags}</div><div class="item-actions"><button title="Ausführen" class="play" data-action="run-prompt" data-id="${p.id}">▶</button><button title="Bearbeiten" data-action="edit-prompt" data-id="${p.id}">✎</button><button title="Löschen" class="delete" data-action="delete-prompt" data-id="${p.id}">🗑</button><button title="Favorit umschalten" class="favorite ${p.isFavorite ? 'favorited' : ''}" data-action="toggle-favorite-prompt" data-id="${p.id}">${i}</button></div>`;
         contentList.appendChild(d);
     });
 };
@@ -145,7 +148,8 @@ const renderChains = () => {
         const d = document.createElement('div');
         d.className = 'item-card';
         const i = c.isFavorite ? ICON_STAR_FILLED : ICON_STAR_OUTLINE;
-        d.innerHTML = `<h3>${c.name}</h3><p>${c.prompts.length} Prompt(s) in dieser Kette</p><div class="item-actions"><button title="Ausführen" class="play" data-action="run-chain" data-id="${c.id}">▶</button><button title="Bearbeiten" data-action="edit-chain" data-id="${c.id}">✎</button><button title="Löschen" class="delete" data-action="delete-chain" data-id="${c.id}">🗑</button><button title="Favorit umschalten" class="favorite ${c.isFavorite ? 'favorited' : ''}" data-action="toggle-favorite-chain" data-id="${c.id}">${i}</button></div>`;
+        const countText = `${c.prompts.length} ${c.prompts.length === 1 ? 'Prompt' : 'Prompts'}`;
+        d.innerHTML = `<h3>${c.name}</h3><p>${countText}</p><div class="item-actions"><button title="Ausführen" class="play" data-action="run-chain" data-id="${c.id}">▶</button><button title="Bearbeiten" data-action="edit-chain" data-id="${c.id}">✎</button><button title="Löschen" class="delete" data-action="delete-chain" data-id="${c.id}">🗑</button><button title="Favorit umschalten" class="favorite ${c.isFavorite ? 'favorited' : ''}" data-action="toggle-favorite-chain" data-id="${c.id}">${i}</button></div>`;
         contentList.appendChild(d);
     });
 };
