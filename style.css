@@ -34,8 +34,8 @@ body {
     background-color: var(--bg-primary);
     color: var(--text-primary);
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    width: 400px;
-    height: 550px;
+    width: 480px; /* leicht vergrößert für mehr Komfort */
+    height: 650px; /* leicht vergrößert für mehr Komfort */
     overflow: hidden;
 }
 
