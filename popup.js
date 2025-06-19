@@ -207,9 +207,13 @@ const handleImportFile = async () => {
 };
 
 const applyTheme = () => {
-    document.body.classList.toggle('light-theme', state.theme === 'light');
+    // Apply the theme class to the root element so the CSS variables defined
+    // in :root.light-theme take effect.
+    document.documentElement.classList.toggle('light-theme', state.theme === 'light');
     if (toggleThemeBtn) {
-        toggleThemeBtn.textContent = state.theme === 'light' ? 'Dunkler Modus' : 'Heller Modus';
+        toggleThemeBtn.textContent = state.theme === 'light'
+            ? 'Dunkler Modus'
+            : 'Heller Modus';
     }
 };
 
