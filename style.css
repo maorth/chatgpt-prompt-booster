@@ -66,6 +66,13 @@ nav button:not(.active):hover { background-color: var(--bg-tertiary); color: var
     color: var(--text-primary);
 }
 
+#add-new-btn {
+    width: 75%;
+    max-width: 600px;
+    margin: 0.5rem auto;
+    display: block;
+}
+
 .btn-primary, .btn-secondary { width: 100%; padding: 0.75rem; border: none; border-radius: 0.5rem; font-weight: bold; cursor: pointer; transition: background-color 0.2s; }
 .btn-primary { background-color: var(--accent); color: white; }
 .btn-primary:hover { background-color: var(--accent-hover); }
