@@ -22,15 +22,17 @@
             <input id="search-box" placeholder="Suchen...">
             <main id="content-list"></main>
             <div id="settings-container" class="hidden">
-                <h2>Sammlungsverwaltung</h2>
-                <button id="export-btn" class="btn-secondary with-icon">
-                    <span class="btn-icon" aria-hidden="true"></span>
-                    Sammlung exportieren
-                </button>
-                <button id="import-btn" class="btn-secondary with-icon">
-                    <span class="btn-icon" aria-hidden="true"></span>
-                    Sammlung importieren
-                </button>
+                <h2>Datenverwaltung</h2>
+                <div class="data-buttons">
+                    <button id="export-btn" class="btn-secondary with-icon">
+                        <span class="btn-icon" aria-hidden="true"></span>
+                        Prompts exportieren
+                    </button>
+                    <button id="import-btn" class="btn-secondary with-icon">
+                        <span class="btn-icon" aria-hidden="true"></span>
+                        Prompts importieren
+                    </button>
+                </div>
                 <input type="file" id="import-file" accept="application/json" class="hidden">
             </div>
             <footer>
