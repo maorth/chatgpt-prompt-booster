@@ -39,7 +39,7 @@ The extension icon will appear in your toolbar.
 
 ## Theme Switch
 
-Open the Settings view in the popup to toggle between light and dark modes. The selected theme is saved in `chrome.storage.local` under the `theme` key, so your choice is automatically applied whenever the popup is opened.
+Use the moon/sun icon in the popup header or press `Alt+L` to toggle between light and dark modes. The selected theme is saved in `chrome.storage.local` under the `theme` key, so your choice is automatically applied whenever the popup is opened.
 
 ## License
 
