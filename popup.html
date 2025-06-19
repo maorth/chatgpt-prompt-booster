@@ -13,9 +13,15 @@
                 <nav>
                     <button id="show-prompts-btn" class="active">Prompts</button>
                     <button id="show-chains-btn">Chains</button>
+                    <button id="show-settings-btn">Einstellungen</button>
                 </nav>
             </header>
             <main id="content-list"></main>
+            <div id="settings-container" class="hidden">
+                <button id="export-btn" class="btn-secondary">Sammlung exportieren</button>
+                <button id="import-btn" class="btn-secondary">Sammlung importieren</button>
+                <input type="file" id="import-file" accept="application/json" class="hidden">
+            </div>
             <footer>
                 <button id="add-new-btn" class="btn-primary">Neuen Prompt erstellen</button>
             </footer>
