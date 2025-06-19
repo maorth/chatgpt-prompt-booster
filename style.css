@@ -100,13 +100,56 @@ nav button:not(.active):hover { background-color: var(--bg-tertiary); color: var
     font-weight: 400;
     white-space: nowrap;
 }
-.item-actions { margin-top: 0.75rem; display: flex; gap: 0.5rem; align-items: center; }
-.item-actions button { background-color: var(--bg-tertiary); border: none; padding: 0.5rem; border-radius: 0.375rem; cursor: pointer; color: var(--text-primary); display: flex; align-items: center; justify-content: center; transition: color 0.2s, background-color 0.2s; }
-.item-actions button.play { background-color: var(--success); }
-.item-actions button.delete { background-color: var(--danger); }
-.item-actions button.favorite { margin-left: auto; background-color: transparent; color: var(--text-secondary); }
-.item-actions button.favorite:hover { color: var(--text-primary); background-color: var(--bg-tertiary); }
-.item-actions button.favorite.favorited { color: var(--favorite); }
+.item-actions {
+    margin-top: 0.75rem;
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s;
+}
+.item-card:hover .item-actions {
+    opacity: 1;
+    pointer-events: auto;
+}
+.item-actions button {
+    background: transparent;
+    border: none;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border-radius: 0.375rem;
+    cursor: pointer;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s, color 0.2s, transform 0.1s;
+}
+.item-actions button:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+    color: var(--text-primary);
+}
+.item-actions button:active {
+    transform: scale(0.95);
+}
+.item-actions button.play:active {
+    color: var(--success);
+}
+.item-actions button.delete:active {
+    color: var(--danger);
+}
+.item-actions button.favorite {
+    margin-left: auto;
+}
+.item-actions button.favorite:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+    color: var(--text-primary);
+}
+.item-actions button.favorite.favorited {
+    color: var(--favorite);
+}
 
 .form-group { margin-bottom: 1rem; }
 .form-group label { display: block; font-size: 0.875rem; color: var(--text-secondary); margin-bottom: 0.25rem; }

@@ -5,6 +5,9 @@ const ICON_MOON = `<svg width="16" height="16" viewBox="0 0 24 24" fill="current
 const ICON_SUN = `<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M12 4.5V2m0 20v-2.5M4.5 12H2m20 0h-2.5M5.636 5.636L4.222 4.222m15.556 15.556l-1.414-1.414M5.636 18.364l-1.414 1.414m15.556-15.556l-1.414 1.414M12 8a4 4 0 100 8 4 4 0 000-8z" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 const ICON_DOWNLOAD = `<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2"/><path d="M7 10l5 5 5-5" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 15V3" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 const ICON_UPLOAD = `<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M4 8v2a2 2 0 002 2h12a2 2 0 002-2V8"/><path d="M17 14l-5-5-5 5" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 9v12" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+const ICON_PLAY = `<svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M4 3v10l9-5-9-5z"/></svg>`;
+const ICON_EDIT = `<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25z"/><path d="M20.71 7.04a1 1 0 000-1.41l-2.34-2.34a1 1 0 00-1.41 0L15.13 4.95l3.75 3.75 1.83-1.66z"/></svg>`;
+const ICON_TRASH = `<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M6 7v12a2 2 0 002 2h8a2 2 0 002-2V7"/><path d="M4 7h16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 7V4h6v3"/></svg>`;
 
 // --- STATE & CONFIG ---
 let state = {
@@ -128,7 +131,7 @@ const renderPrompts = () => {
         const tags = (p.tags || [])
             .map(t => `<span class="tag-chip">${t}</span>`)
             .join('');
-        d.innerHTML = `<h3>${p.title}</h3><p>${p.description||'Keine Beschreibung'}</p><div class="tags">${tags}</div><div class="item-actions"><button title="Ausführen" class="play" data-action="run-prompt" data-id="${p.id}">▶</button><button title="Bearbeiten" data-action="edit-prompt" data-id="${p.id}">✎</button><button title="Löschen" class="delete" data-action="delete-prompt" data-id="${p.id}">🗑</button><button title="Favorit umschalten" class="favorite ${p.isFavorite ? 'favorited' : ''}" data-action="toggle-favorite-prompt" data-id="${p.id}">${i}</button></div>`;
+        d.innerHTML = `<h3>${p.title}</h3><p>${p.description||'Keine Beschreibung'}</p><div class="tags">${tags}</div><div class="item-actions"><button title="Ausführen" class="play" data-action="run-prompt" data-id="${p.id}">${ICON_PLAY}</button><button title="Bearbeiten" data-action="edit-prompt" data-id="${p.id}">${ICON_EDIT}</button><button title="Löschen" class="delete" data-action="delete-prompt" data-id="${p.id}">${ICON_TRASH}</button><button title="Favorit umschalten" class="favorite ${p.isFavorite ? 'favorited' : ''}" data-action="toggle-favorite-prompt" data-id="${p.id}">${i}</button></div>`;
         contentList.appendChild(d);
     });
 };
@@ -156,7 +159,7 @@ const renderChains = () => {
         const tags = (c.tags || [])
             .map(t => `<span class="tag-chip">${t}</span>`)
             .join('');
-        d.innerHTML = `<h3>${c.name}</h3><p>${countText}</p><div class="tags">${tags}</div><div class="item-actions"><button title="Ausführen" class="play" data-action="run-chain" data-id="${c.id}">▶</button><button title="Bearbeiten" data-action="edit-chain" data-id="${c.id}">✎</button><button title="Löschen" class="delete" data-action="delete-chain" data-id="${c.id}">🗑</button><button title="Favorit umschalten" class="favorite ${c.isFavorite ? 'favorited' : ''}" data-action="toggle-favorite-chain" data-id="${c.id}">${i}</button></div>`;
+        d.innerHTML = `<h3>${c.name}</h3><p>${countText}</p><div class="tags">${tags}</div><div class="item-actions"><button title="Ausführen" class="play" data-action="run-chain" data-id="${c.id}">${ICON_PLAY}</button><button title="Bearbeiten" data-action="edit-chain" data-id="${c.id}">${ICON_EDIT}</button><button title="Löschen" class="delete" data-action="delete-chain" data-id="${c.id}">${ICON_TRASH}</button><button title="Favorit umschalten" class="favorite ${c.isFavorite ? 'favorited' : ''}" data-action="toggle-favorite-chain" data-id="${c.id}">${i}</button></div>`;
         contentList.appendChild(d);
     });
 };
