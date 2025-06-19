@@ -9,6 +9,7 @@ A Chrome extension for managing and executing ChatGPT prompts and prompt chains.
 - **Variable placeholders**: prompts can contain `{{variable}}` tokens that are filled in when executed.
 - **Popup interface**: edit, delete, favorite, and run prompts or chains.
 - **Content script integration**: automatically sends prompts to an open ChatGPT tab and waits for the response.
+- **Light/Dark theme switch**: choose between light and dark modes from the popup settings.
 
 ## Installation
 
@@ -26,6 +27,7 @@ The extension icon will appear in your toolbar.
 3. Create new prompts or chains using the provided forms.
 4. Click the play button to execute a prompt or chain in the active ChatGPT tab.
 5. If variables are detected, you will be prompted to enter values before execution.
+6. Switch between light and dark themes under **Settings**. The selected mode is stored using `chrome.storage.local` so your preference is applied whenever you reopen the popup.
 
 ## File Overview
 
@@ -34,6 +36,10 @@ The extension icon will appear in your toolbar.
 - `content.js` – injected into ChatGPT pages to automate prompt submission and detect completion.
 - `background.js` – background service worker (currently minimal).
 - `icons/` – extension icons.
+
+## Theme Switch
+
+Open the Settings view in the popup to toggle between light and dark modes. The selected theme is saved in `chrome.storage.local` under the `theme` key, so your choice is automatically applied whenever the popup is opened.
 
 ## License
 
