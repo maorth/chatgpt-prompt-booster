@@ -10,6 +10,7 @@
     --success: #16a34a; /* green-600 */
     --favorite: #facc15; /* gelb/gold für Favoriten */
     --border-color: #3f3f46;
+    --btn-secondary-hover: #52525b; /* zinc-600 */
 }
 
 :root.light-theme {
@@ -24,6 +25,7 @@
     --success: #16a34a; /* green-600 */
     --favorite: #facc15; /* gelb/gold für Favoriten */
     --border-color: #d4d4d8; /* zinc-300 */
+    --btn-secondary-hover: #52525b; /* zinc-600 */
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -62,7 +64,7 @@ nav button.active { background-color: var(--accent); color: var(--text-primary);
 .btn-primary { background-color: var(--accent); color: white; }
 .btn-primary:hover { background-color: var(--accent-hover); }
 .btn-secondary { background-color: var(--bg-tertiary); color: var(--text-primary); }
-.btn-secondary:hover { background-color: #52525b; }
+.btn-secondary:hover { background-color: var(--btn-secondary-hover); }
 .btn-secondary.small { width: auto; padding: 0.5rem 1rem; font-weight: normal; margin-top: 0.5rem; }
 
 .item-card { background-color: var(--bg-secondary); padding: 1rem; border-radius: 0.5rem; margin-bottom: 0.75rem; }
