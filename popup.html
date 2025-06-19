@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>Prompt Manager</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="app-container">
+        <div id="main-view">
+            <header>
+                <h1>Prompt Manager</h1>
+                <nav>
+                    <button id="show-prompts-btn" class="active">Prompts</button>
+                    <button id="show-chains-btn">Chains</button>
+                </nav>
+            </header>
+            <main id="content-list"></main>
+            <footer>
+                <button id="add-new-btn" class="btn-primary">Neuen Prompt erstellen</button>
+            </footer>
+        </div>
+
+        <div id="prompt-editor-view" class="hidden">
+            <header>
+                <h2 id="prompt-editor-title">Prompt erstellen</h2>
+            </header>
+            <main>
+                <form id="prompt-form">
+                    <input type="hidden" id="prompt-id">
+                    <div class="form-group">
+                        <label for="prompt-title">Titel</label>
+                        <input type="text" id="prompt-title" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="prompt-text">Prompt-Text (z.B. mit {{variable}})</label>
+                        <textarea id="prompt-text" rows="4" required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="prompt-description">Beschreibung (optional)</label>
+                        <textarea id="prompt-description" rows="2"></textarea>
+                    </div>
+                </form>
+            </main>
+            <footer>
+                <button id="save-prompt-btn" class="btn-primary">Speichern</button>
+                <button id="cancel-prompt-btn" class="btn-secondary">Abbrechen</button>
+            </footer>
+        </div>
+
+        <div id="chain-editor-view" class="hidden">
+            <header>
+                 <h2 id="chain-editor-title">Chain erstellen</h2>
+            </header>
+            <main>
+                <form id="chain-form">
+                    <input type="hidden" id="chain-id">
+                    <div class="form-group">
+                        <label for="chain-name">Chain-Name</label>
+                        <input type="text" id="chain-name" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Prompts in dieser Chain</label>
+                        <div id="chain-prompts-container"></div>
+                        <button type="button" id="add-prompt-to-chain-btn" class="btn-secondary small">+ Prompt hinzufügen</button>
+                    </div>
+                </form>
+            </main>
+            <footer>
+                <button id="save-chain-btn" class="btn-primary">Chain Speichern</button>
+                <button id="cancel-chain-btn" class="btn-secondary">Abbrechen</button>
+            </footer>
+        </div>
+        
+        <div id="variable-input-view" class="hidden">
+            <header>
+                <h2>Variablen ausfüllen</h2>
+            </header>
+            <main>
+                <form id="variable-form">
+                    <div id="variable-fields-container"></div>
+                </form>
+            </main>
+            <footer>
+                <button id="execute-variable-prompt-btn" class="btn-primary">Prompt ausführen</button>
+                <button id="cancel-variable-input-btn" class="btn-secondary">Abbrechen</button>
+            </footer>
+        </div>
+    </div>
+    <script src="popup.js"></script>
+</body>
+</html>
