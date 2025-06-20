@@ -19,22 +19,26 @@
                     <button id="show-settings-btn">Einstellungen</button>
                 </nav>
             </header>
-            <input id="search-box" placeholder="Suchen...">
-            <button id="add-new-btn" title="Neuen Prompt erstellen" aria-label="Neuen Prompt erstellen"></button>
-            <main id="content-list"></main>
-            <div id="settings-container" class="hidden">
-                <h2>Datenverwaltung</h2>
-                <div class="data-buttons">
-                    <button id="export-btn" class="btn-secondary with-icon">
-                        <span class="btn-icon" aria-hidden="true"></span>
-                        Prompts exportieren
+            <div id="main-content">
+                <div id="search-add-container">
+                    <input id="search-box" placeholder="Suchen...">
+                    <button id="add-new-btn" title="Neuen Prompt erstellen" aria-label="Neuen Prompt erstellen"></button>
+                </div>
+                <main id="content-list"></main>
+                <div id="settings-container" class="hidden">
+                    <h2>Datenverwaltung</h2>
+                    <div class="data-buttons">
+                        <button id="export-btn" class="btn-secondary with-icon">
+                            <span class="btn-icon" aria-hidden="true"></span>
+                            Prompts exportieren
                     </button>
                     <button id="import-btn" class="btn-secondary with-icon">
                         <span class="btn-icon" aria-hidden="true"></span>
                         Prompts importieren
                     </button>
                 </div>
-                <input type="file" id="import-file" accept="application/json" class="hidden">
+                    <input type="file" id="import-file" accept="application/json" class="hidden">
+                </div>
             </div>
         </div>
 

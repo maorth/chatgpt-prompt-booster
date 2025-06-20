@@ -47,6 +47,16 @@ header { border-bottom: 1px solid var(--border-color); }
 .theme-toggle-btn svg { width: 1.25rem; height: 1.25rem; }
 footer { border-top: 1px solid var(--border-color); background-color: var(--bg-primary); display: flex; gap: 0.5rem; }
 main { padding: 1rem; overflow-y: auto; flex-grow: 1; }
+
+#main-content {
+    padding-left: 2rem;
+    padding-right: 2rem;
+}
+
+#main-content #content-list {
+    padding-left: 0;
+    padding-right: 0;
+}
 h1, h2 { font-size: 1.25rem; font-weight: bold; margin-bottom: 0.5rem; }
 nav { display: flex; background-color: var(--bg-secondary); border-radius: 0.5rem; padding: 0.25rem; }
 nav button { flex: 1; padding: 0.5rem; background: none; border: none; color: var(--text-secondary); font-weight: 500; border-radius: 0.375rem; cursor: pointer; transition: background-color 0.2s, color 0.2s; }
@@ -54,11 +64,18 @@ nav button.active { background-color: var(--accent); color: var(--text-primary);
 nav button:not(.active):hover { background-color: var(--bg-tertiary); color: var(--text-primary); }
 .hidden { display: none !important; }
 
-#search-box {
-    width: 75%;
-    max-width: 600px;
+#search-add-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1rem;
     margin: 0.5rem auto;
-    display: block;
+    width: 100%;
+}
+
+#search-box {
+    flex: 1;
+    max-width: 600px;
     padding: 0.75rem;
     background-color: var(--bg-secondary);
     border: 1px solid var(--border-color);
@@ -69,7 +86,7 @@ nav button:not(.active):hover { background-color: var(--bg-tertiary); color: var
 #add-new-btn {
     width: 48px;
     height: 48px;
-    margin: 0.75rem auto;
+    margin: 0;
     display: flex;
     align-items: center;
     justify-content: center;
