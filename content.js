@@ -64,7 +64,7 @@
     };
 
     // --- Logik für Ketten ---
-    const updateStatusOverlay = (step, total, waitSec) => {
+    const updateStatusOverlay = (step, total) => {
         let o = document.getElementById('chain-status-overlay');
         if (!o) {
             o = document.createElement('div');
@@ -81,55 +81,18 @@
             o.style.transition = 'background 0.3s ease, transform 0.2s ease';
             const textDiv = document.createElement('div');
             textDiv.className = 'chain-status-text';
-            const bar = document.createElement('div');
-            bar.className = 'chain-progress';
-            bar.style.width = '100%';
-            bar.style.height = '6px';
-            bar.style.marginTop = '4px';
-            bar.style.background = '#333333';
-            bar.style.borderRadius = '4px';
-            bar.style.overflow = 'hidden';
-            bar.style.display = 'none';
-            const fill = document.createElement('div');
-            fill.className = 'progress-fill';
-            fill.style.height = '100%';
-            fill.style.width = '0%';
-            fill.style.background = '#32CD32';
-            bar.appendChild(fill);
             o.appendChild(textDiv);
-            o.appendChild(bar);
             document.body.appendChild(o);
         }
         const textDiv = o.querySelector('.chain-status-text');
-        const bar = o.querySelector('.chain-progress');
-        const fill = o.querySelector('.progress-fill');
 
         let text = '';
         if (typeof step === 'number' && typeof total === 'number') {
             text = `Prompt ${step} von ${total} wird ausgeführt.`;
         }
-        if (typeof waitSec === 'number' && waitSec > 0) {
-            text += ` Warte ${waitSec}s...`;
-        }
         if (!text) text = 'Chain abgeschlossen.';
 
         if (textDiv) textDiv.textContent = text;
-
-        if (bar && fill) {
-            if (typeof waitSec === 'number' && waitSec > 0) {
-                bar.style.display = 'block';
-                if (!bar.dataset.started) {
-                    fill.style.transition = `width ${delaySeconds}s linear`;
-                    fill.style.width = '0%';
-                    requestAnimationFrame(() => { fill.style.width = '100%'; });
-                    bar.dataset.started = '1';
-                }
-            } else {
-                bar.style.display = 'none';
-                fill.style.width = '0%';
-                bar.dataset.started = '';
-            }
-        }
     };
 
     const hideStatusOverlay = (delay = 0) => {
@@ -151,16 +114,109 @@
         setTimeout(() => { o.style.transform = 'scale(1)'; }, 200);
     };
 
+    // --- Countdown Timer for wait durations ---
+    let countdownTotal = 0;
+    const showCountdownTimer = (duration) => {
+        countdownTotal = duration;
+        let c = document.getElementById('chain-countdown-timer');
+        if (!c) {
+            c = document.createElement('div');
+            c.id = 'chain-countdown-timer';
+            c.style.position = 'fixed';
+            c.style.bottom = '4.5rem';
+            c.style.right = '1rem';
+            c.style.width = '48px';
+            c.style.height = '48px';
+            c.style.zIndex = '9999';
+            c.style.display = 'flex';
+            c.style.alignItems = 'center';
+            c.style.justifyContent = 'center';
+            c.style.color = '#fff';
+            c.style.fontWeight = 'bold';
+            c.style.fontSize = '14px';
+            c.style.transition = 'opacity 0.3s ease';
+            c.style.opacity = '0';
+
+            const svgNS = 'http://www.w3.org/2000/svg';
+            const svg = document.createElementNS(svgNS, 'svg');
+            svg.setAttribute('width', '48');
+            svg.setAttribute('height', '48');
+            svg.style.transform = 'rotate(-90deg) scale(-1,1)';
+
+            const radius = 22;
+            const circumference = 2 * Math.PI * radius;
+
+            const track = document.createElementNS(svgNS, 'circle');
+            track.setAttribute('cx', '24');
+            track.setAttribute('cy', '24');
+            track.setAttribute('r', radius.toString());
+            track.setAttribute('stroke', '#444');
+            track.setAttribute('stroke-width', '4');
+            track.setAttribute('fill', 'transparent');
+
+            const progress = document.createElementNS(svgNS, 'circle');
+            progress.classList.add('countdown-progress');
+            progress.setAttribute('cx', '24');
+            progress.setAttribute('cy', '24');
+            progress.setAttribute('r', radius.toString());
+            progress.setAttribute('stroke', '#32CD32');
+            progress.setAttribute('stroke-width', '4');
+            progress.setAttribute('fill', 'transparent');
+            progress.style.strokeDasharray = circumference;
+            progress.style.strokeDashoffset = '0';
+
+            svg.appendChild(track);
+            svg.appendChild(progress);
+
+            const num = document.createElement('div');
+            num.className = 'countdown-number';
+            num.style.position = 'absolute';
+            num.style.top = '50%';
+            num.style.left = '50%';
+            num.style.transform = 'translate(-50%, -50%)';
+
+            c.appendChild(svg);
+            c.appendChild(num);
+            document.body.appendChild(c);
+            // store circumference
+            c.dataset.circumference = circumference.toString();
+        }
+        c.style.opacity = '1';
+        updateCountdownTimer(duration);
+    };
+
+    const updateCountdownTimer = (remain) => {
+        const c = document.getElementById('chain-countdown-timer');
+        if (!c) return;
+        const num = c.querySelector('.countdown-number');
+        const circle = c.querySelector('.countdown-progress');
+        const circumference = parseFloat(c.dataset.circumference || '0');
+        if (num) num.textContent = remain.toString();
+        if (circle) {
+            const offset = circumference * (1 - remain / countdownTotal);
+            circle.style.strokeDashoffset = offset.toString();
+        }
+    };
+
+    const hideCountdownTimer = () => {
+        const c = document.getElementById('chain-countdown-timer');
+        if (!c) return;
+        c.style.opacity = '0';
+        setTimeout(() => { if (c.parentNode) c.remove(); }, 300);
+    };
+
     const waitBeforeNext = (cb) => {
         if (delaySeconds <= 0) { cb(); return; }
         let remain = delaySeconds;
-        updateStatusOverlay(currentPromptIndex, currentChain.length, remain);
+        updateStatusOverlay(currentPromptIndex, currentChain.length);
+        showCountdownTimer(remain);
         const i = setInterval(() => {
             remain--;
             if (remain > 0) {
-                updateStatusOverlay(currentPromptIndex, currentChain.length, remain);
+                updateCountdownTimer(remain);
             } else {
                 clearInterval(i);
+                hideCountdownTimer();
                 cb();
             }
         }, 1000);
