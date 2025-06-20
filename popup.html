@@ -28,6 +28,7 @@
                 <div id="tags-filter-container"></div>
                 <main id="content-list"></main>
                 <div id="settings-container" class="hidden">
+                    <div class="settings-card">
                         <h2>Datenverwaltung</h2>
                         <div class="data-buttons">
                             <button id="export-btn" class="btn-secondary with-icon">
@@ -40,18 +41,23 @@
                             </button>
                         </div>
                         <input type="file" id="import-file" accept="application/json" class="hidden">
+                    </div>
 
+                    <div class="settings-card">
                         <h2>Chain-Einstellungen</h2>
                         <div class="form-group">
                             <label for="chain-delay">Verzögerung zwischen Prompts (Sekunden)</label>
                             <input type="number" id="chain-delay" min="0" max="60" step="1" value="0" title="Wartezeit nach jedem Prompt in einer Chain">
                         </div>
+                    </div>
 
+                    <div class="settings-card">
                         <h2>Anzeige</h2>
                         <div class="checkbox-group">
                             <input type="checkbox" id="show-tags-filter">
                             <label for="show-tags-filter">Tags-Filter anzeigen</label>
                         </div>
+                    </div>
                 </div>
             </div>
         </div>
