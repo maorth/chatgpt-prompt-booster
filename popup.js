@@ -22,6 +22,8 @@ let state = {
 };
 let draggedItemIndex = null;
 let searchTerm = '';
+let showOnlyFavorites = false;
+let activeTags = [];
 
 // --- DOM ELEMENT QUERY ---
 let mainView, promptEditorView, chainEditorView, variableInputView, contentList,
@@ -32,6 +34,7 @@ let mainView, promptEditorView, chainEditorView, variableInputView, contentList,
     saveChainBtn, cancelChainBtn, variableFieldsContainer, executeVariablePromptBtn,
     cancelVariableInputBtn, exportBtn, importBtn, importFileInput,
     quickThemeToggleBtn, chainDelayInput, searchAddContainer;
+let favoritesToggleBtn, tagsFilterContainer;
 
 const queryElements = () => {
     mainView = document.getElementById('main-view');
@@ -41,6 +44,8 @@ const queryElements = () => {
     contentList = document.getElementById('content-list');
     searchAddContainer = document.getElementById('search-add-container');
     searchBox = document.getElementById('search-box');
+    favoritesToggleBtn = document.getElementById('favorites-filter-btn');
+    tagsFilterContainer = document.getElementById('tags-filter-container');
     settingsContainer = document.getElementById('settings-container');
     addNewBtn = document.getElementById('add-new-btn');
     showPromptsBtn = document.getElementById('show-prompts-btn');
@@ -91,12 +96,22 @@ const render = () => {
     chainEditorView.classList.toggle('hidden', state.currentView !== 'chainEditor');
     variableInputView.classList.toggle('hidden', state.currentView !== 'variableInput');
     searchAddContainer.classList.toggle('hidden', !isMainView || state.currentView === 'settings');
+    if (tagsFilterContainer) tagsFilterContainer.classList.toggle('hidden', !isMainView || state.currentView === 'settings');
+    if (favoritesToggleBtn) {
+        favoritesToggleBtn.innerHTML = showOnlyFavorites ? ICON_STAR_FILLED : ICON_STAR_OUTLINE;
+        favoritesToggleBtn.classList.toggle('active', showOnlyFavorites);
+    }
+    if (isMainView && tagsFilterContainer && state.currentView !== 'settings') {
+        renderTagFilter();
+    }
     if (isMainView) {
         showPromptsBtn.classList.toggle('active', state.currentView === 'prompts');
         showChainsBtn.classList.toggle('active', state.currentView === 'chains');
         showSettingsBtn.classList.toggle('active', state.currentView === 'settings');
         if (state.currentView === 'prompts') {
             renderPrompts();
+            renderTagFilter();
+            if (tagsFilterContainer) tagsFilterContainer.classList.remove('hidden');
             addNewBtn.innerHTML = ICON_PLUS;
             addNewBtn.title = 'Neuen Prompt erstellen';
             addNewBtn.setAttribute('aria-label', 'Neuen Prompt erstellen');
@@ -105,6 +120,8 @@ const render = () => {
             settingsContainer.classList.add('hidden');
         } else if (state.currentView === 'chains') {
             renderChains();
+            renderTagFilter();
+            if (tagsFilterContainer) tagsFilterContainer.classList.remove('hidden');
             addNewBtn.innerHTML = ICON_PLUS;
             addNewBtn.title = 'Neue Chain erstellen';
             addNewBtn.setAttribute('aria-label', 'Neue Chain erstellen');
@@ -115,6 +132,7 @@ const render = () => {
             addNewBtn.classList.add('hidden');
             contentList.classList.add('hidden');
             settingsContainer.classList.remove('hidden');
+            if (tagsFilterContainer) tagsFilterContainer.classList.add('hidden');
             if (chainDelayInput) chainDelayInput.value = state.chainDelay;
         }
     }
@@ -123,6 +141,8 @@ const renderPrompts = () => {
     contentList.innerHTML = '';
     const term = searchTerm.trim().toLowerCase();
     let list = [...state.prompts];
+    if (showOnlyFavorites) list = list.filter(p => p.isFavorite);
+    if (activeTags.length) list = list.filter(p => activeTags.every(t => (p.tags || []).includes(t)));
     if (term) {
         list = list.filter(p => {
             const haystack = `${p.title} ${(p.description || '')} ${(p.tags || []).join(' ')}`.toLowerCase();
@@ -154,6 +174,8 @@ const renderChains = () => {
     contentList.innerHTML = '';
     const term = searchTerm.trim().toLowerCase();
     let list = [...state.chains];
+    if (showOnlyFavorites) list = list.filter(c => c.isFavorite);
+    if (activeTags.length) list = list.filter(c => activeTags.every(t => (c.tags || []).includes(t)));
     if (term) {
         list = list.filter(c => {
             const haystack = `${c.name} ${(c.tags || []).join(' ')}`.toLowerCase();
@@ -180,6 +202,19 @@ const renderChains = () => {
         contentList.appendChild(d);
     });
 };
+
+const renderTagFilter = () => {
+    if (!tagsFilterContainer) return;
+    const items = state.currentView === 'prompts' ? state.prompts : state.chains;
+    const counts = {};
+    items.forEach(i => (i.tags || []).forEach(t => { counts[t] = (counts[t] || 0) + 1; }));
+    const tags = Object.keys(counts).sort();
+    tagsFilterContainer.innerHTML = tags.map(t => {
+        const selected = activeTags.includes(t) ? 'selected' : '';
+        return `<span class="tag-chip ${selected}" data-tag="${t}" title="${t}">${t} (${counts[t]})</span>`;
+    }).join('');
+    tagsFilterContainer.classList.toggle('hidden', tags.length === 0);
+};
 const renderChainPromptInputs = () => {
     if (!state.chainBeingEdited) return;
     chainPromptsContainer.innerHTML = '';
@@ -204,6 +239,18 @@ const autoResizeTextarea = (t) => {
 };
 const extractVariables = (t) => { const r = /{{\s*([a-zA-Z0-9_]+)\s*}}/g; const m = t.match(r) || []; return Array.from(new Set(m.map(v => v.replace(/[{}]/g, '').trim()))); };
 const handleSearchInput = () => { searchTerm = searchBox.value; render(); };
+const handleFavoritesToggle = () => { showOnlyFavorites = !showOnlyFavorites; render(); };
+const handleTagFilterClick = (e) => {
+    const chip = e.target.closest('.tag-chip[data-tag]');
+    if (!chip) return;
+    const t = chip.dataset.tag;
+    if (activeTags.includes(t)) {
+        activeTags = activeTags.filter(x => x !== t);
+    } else {
+        activeTags.push(t);
+    }
+    render();
+};
 const handleNavClick = (v) => {
     state.currentView = v;
     showPromptsBtn.classList.toggle('active', v === 'prompts');
@@ -440,6 +487,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     addNewBtn.addEventListener('click', handleAddNew);
     contentList.addEventListener('click', handleListClick);
     searchBox.addEventListener('input', handleSearchInput);
+    if (favoritesToggleBtn) favoritesToggleBtn.addEventListener('click', handleFavoritesToggle);
+    if (tagsFilterContainer) tagsFilterContainer.addEventListener('click', handleTagFilterClick);
     savePromptBtn.addEventListener('click', handleSavePrompt);
     cancelPromptBtn.addEventListener('click', () => { state.editingPromptId = null; handleNavClick('prompts'); });
     saveChainBtn.addEventListener('click', handleSaveChain);
