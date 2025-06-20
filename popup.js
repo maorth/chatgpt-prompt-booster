@@ -184,7 +184,13 @@ const renderChainPromptInputs = () => {
 const renderVariableInputs = (v) => { variableFieldsContainer.innerHTML = ''; v.forEach(v => { const g = document.createElement('div'); g.className = 'form-group'; g.innerHTML = `<label for="var-${v}">${v}</label><input type="text" id="var-${v}" name="${v}" required class="variable-input">`; variableFieldsContainer.appendChild(g); }); };
 
 // --- EVENT HANDLERS & ACTIONS ---
-const autoResizeTextarea = (t) => { if (t) { t.style.height = 'auto'; t.style.height = `${t.scrollHeight}px`; } };
+const autoResizeTextarea = (t) => {
+    if (!t) return;
+    t.style.height = 'auto';
+    const max = parseInt(getComputedStyle(t).maxHeight, 10) || Number.MAX_VALUE;
+    const newHeight = Math.min(t.scrollHeight, max);
+    t.style.height = `${newHeight}px`;
+};
 const extractVariables = (t) => { const r = /{{\s*([a-zA-Z0-9_]+)\s*}}/g; const m = t.match(r) || []; return Array.from(new Set(m.map(v => v.replace(/[{}]/g, '').trim()))); };
 const handleSearchInput = () => { searchTerm = searchBox.value; render(); };
 const handleNavClick = (v) => {
