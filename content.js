@@ -78,6 +78,7 @@
             o.style.borderRadius = '0.5rem';
             o.style.zIndex = '9999';
             o.style.fontSize = '14px';
+            o.style.transition = 'background 0.3s ease, transform 0.2s ease';
             document.body.appendChild(o);
         }
         let text = '';
@@ -101,6 +102,15 @@
         }
     };
 
+    const showSuccessOverlay = () => {
+        const o = document.getElementById('chain-status-overlay');
+        if (!o) return;
+        o.style.background = '#4CAF50';
+        o.textContent = '✅ Chain completed successfully!';
+        o.style.transform = 'scale(1.05)';
+        setTimeout(() => { o.style.transform = 'scale(1)'; }, 200);
+    };
+
     const waitBeforeNext = (cb) => {
         if (delaySeconds <= 0) { cb(); return; }
         let remain = delaySeconds;
@@ -122,7 +132,8 @@
             currentChain = [];
             currentPromptIndex = 0;
             updateStatusOverlay();
-            hideStatusOverlay(2000);
+            showSuccessOverlay();
+            hideStatusOverlay(4000);
             return;
         }
         updateStatusOverlay(currentPromptIndex + 1, currentChain.length);
@@ -135,7 +146,8 @@
                 currentChain = [];
                 currentPromptIndex = 0;
                 updateStatusOverlay();
-                hideStatusOverlay(2000);
+                showSuccessOverlay();
+                hideStatusOverlay(4000);
             } else {
                 waitBeforeNext(runNextChainStep);
             }
