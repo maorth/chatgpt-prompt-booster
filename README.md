@@ -15,6 +15,7 @@ A Chrome extension for managing and executing ChatGPT prompts and prompt chains.
 - **Search**: filter items by title, description or tags using the search box.
 - **Drag and drop**: reorder prompts within a chain via a simple drag handle.
 - **Import/Export**: backup all prompts and chains as JSON files from the settings view.
+- **Global prompt delay**: set a delay (in seconds) between prompts when running a chain.
 
 ## Installation
 

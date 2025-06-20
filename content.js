@@ -2,6 +2,7 @@
     let isExecuting = false;
     let currentChain = [];
     let currentPromptIndex = 0;
+    let delaySeconds = 0;
 
     // --- DOM-Helfer ---
     const getSubmitButton = () => document.querySelector('button#composer-submit-button');
@@ -63,18 +64,66 @@
     };
 
     // --- Logik für Ketten ---
+    const showDelayOverlay = (s) => {
+        let o = document.getElementById('chain-delay-overlay');
+        if (!o) {
+            o = document.createElement('div');
+            o.id = 'chain-delay-overlay';
+            o.style.position = 'fixed';
+            o.style.bottom = '1rem';
+            o.style.right = '1rem';
+            o.style.background = 'rgba(0,0,0,0.8)';
+            o.style.color = '#fff';
+            o.style.padding = '0.5rem 1rem';
+            o.style.borderRadius = '0.5rem';
+            o.style.zIndex = '9999';
+            o.style.fontSize = '14px';
+            document.body.appendChild(o);
+        }
+        o.textContent = `Warte ${s} Sekunden...`;
+    };
+
+    const hideDelayOverlay = () => {
+        const o = document.getElementById('chain-delay-overlay');
+        if (o) o.remove();
+    };
+
+    const waitBeforeNext = (cb) => {
+        if (delaySeconds <= 0) { cb(); return; }
+        let remain = delaySeconds;
+        showDelayOverlay(remain);
+        const i = setInterval(() => {
+            remain--;
+            if (remain > 0) {
+                showDelayOverlay(remain);
+            } else {
+                clearInterval(i);
+                hideDelayOverlay();
+                cb();
+            }
+        }, 1000);
+    };
+
     const runNextChainStep = () => {
         if (currentPromptIndex >= currentChain.length) {
             isExecuting = false;
             currentChain = [];
             currentPromptIndex = 0;
+            hideDelayOverlay();
             return;
         }
         const promptText = currentChain[currentPromptIndex].text;
-        
+
         submitPrompt(promptText, () => {
             currentPromptIndex++;
-            setTimeout(runNextChainStep, 250); // Kurze Atempause vor dem nächsten Prompt
+            if (currentPromptIndex >= currentChain.length) {
+                isExecuting = false;
+                currentChain = [];
+                currentPromptIndex = 0;
+                hideDelayOverlay();
+            } else {
+                waitBeforeNext(runNextChainStep);
+            }
         });
     };
 
@@ -86,7 +135,8 @@
         }
         
         isExecuting = true;
-        const { type, text, chain } = e.detail;
+        const { type, text, chain, delay } = e.detail;
+        delaySeconds = typeof delay === 'number' && delay >= 0 ? delay : 0;
 
         if (type === 'execute-prompt') {
             executeSinglePrompt(text);
