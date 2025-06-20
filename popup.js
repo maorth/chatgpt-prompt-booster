@@ -132,12 +132,16 @@ const renderPrompts = () => {
     const sorted = list.sort((a, b) => (b.isFavorite || 0) - (a.isFavorite || 0));
     sorted.forEach(p => {
         const d = document.createElement('div');
-        d.className = 'item-card';
+        const matchTitle = p.title.toLowerCase().includes(term);
+        const matchDesc = (p.description || '').toLowerCase().includes(term);
+        const matchTag = (p.tags || []).some(t => t.toLowerCase().includes(term));
+        const shouldExpand = term && !matchTitle && (matchDesc || matchTag);
+        d.className = `item-card ${shouldExpand ? 'expanded' : 'collapsed'}`;
         const i = p.isFavorite ? ICON_STAR_FILLED : ICON_STAR_OUTLINE;
         const tags = (p.tags || [])
             .map(t => `<span class="tag-chip">${t}</span>`)
             .join('');
-        d.innerHTML = `<div class="item-header"><h3 title="${p.title}">${p.title}</h3><div class="item-actions"><button title="Ausführen" class="play" data-action="run-prompt" data-id="${p.id}">${ICON_PLAY}</button><button title="Bearbeiten" data-action="edit-prompt" data-id="${p.id}">${ICON_EDIT}</button><button title="Löschen" class="delete" data-action="delete-prompt" data-id="${p.id}">${ICON_TRASH}</button><button title="Favorit umschalten" class="favorite ${p.isFavorite ? 'favorited' : ''}" data-action="toggle-favorite-prompt" data-id="${p.id}">${i}</button></div></div><p>${p.description||'Keine Beschreibung'}</p><div class="tags">${tags}</div>`;
+        d.innerHTML = `<div class="item-header"><h3 title="${p.title}">${p.title}</h3><div class="item-actions"><button title="Ausführen" class="play" data-action="run-prompt" data-id="${p.id}">${ICON_PLAY}</button><button title="Bearbeiten" data-action="edit-prompt" data-id="${p.id}">${ICON_EDIT}</button><button title="Löschen" class="delete" data-action="delete-prompt" data-id="${p.id}">${ICON_TRASH}</button><button title="Favorit umschalten" class="favorite ${p.isFavorite ? 'favorited' : ''}" data-action="toggle-favorite-prompt" data-id="${p.id}">${i}</button></div><span class="expand-arrow">▾</span></div><div class="item-details"><p class="description">${p.description||'Keine Beschreibung'}</p><div class="tags">${tags}</div></div>`;
         contentList.appendChild(d);
     });
 };
@@ -159,13 +163,16 @@ const renderChains = () => {
     const sorted = list.sort((a, b) => (b.isFavorite || 0) - (a.isFavorite || 0));
     sorted.forEach(c => {
         const d = document.createElement('div');
-        d.className = 'item-card';
+        const matchTitle = c.name.toLowerCase().includes(term);
+        const matchTag = (c.tags || []).some(t => t.toLowerCase().includes(term));
+        const shouldExpand = term && !matchTitle && matchTag;
+        d.className = `item-card ${shouldExpand ? 'expanded' : 'collapsed'}`;
         const i = c.isFavorite ? ICON_STAR_FILLED : ICON_STAR_OUTLINE;
         const countText = `${c.prompts.length} ${c.prompts.length === 1 ? 'Prompt' : 'Prompts'}`;
         const tags = (c.tags || [])
             .map(t => `<span class="tag-chip">${t}</span>`)
             .join('');
-        d.innerHTML = `<div class="item-header"><h3 title="${c.name}">${c.name}</h3><div class="item-actions"><button title="Ausführen" class="play" data-action="run-chain" data-id="${c.id}">${ICON_PLAY}</button><button title="Bearbeiten" data-action="edit-chain" data-id="${c.id}">${ICON_EDIT}</button><button title="Löschen" class="delete" data-action="delete-chain" data-id="${c.id}">${ICON_TRASH}</button><button title="Favorit umschalten" class="favorite ${c.isFavorite ? 'favorited' : ''}" data-action="toggle-favorite-chain" data-id="${c.id}">${i}</button></div></div><p>${countText}</p><div class="tags">${tags}</div>`;
+        d.innerHTML = `<div class="item-header"><h3 title="${c.name}">${c.name}</h3><div class="item-actions"><button title="Ausführen" class="play" data-action="run-chain" data-id="${c.id}">${ICON_PLAY}</button><button title="Bearbeiten" data-action="edit-chain" data-id="${c.id}">${ICON_EDIT}</button><button title="Löschen" class="delete" data-action="delete-chain" data-id="${c.id}">${ICON_TRASH}</button><button title="Favorit umschalten" class="favorite ${c.isFavorite ? 'favorited' : ''}" data-action="toggle-favorite-chain" data-id="${c.id}">${i}</button></div><span class="expand-arrow">▾</span></div><div class="item-details"><p class="chain-stats">${countText}</p><div class="tags">${tags}</div></div>`;
         contentList.appendChild(d);
     });
 };
@@ -219,22 +226,84 @@ const handleAddNew = () => {
         render();
     }
 };
-const handleListClick = async (e) => { const t = e.target.closest('button'); if (!t) return; const { action, id } = t.dataset;
-    if (action === 'toggle-favorite-prompt' || action === 'toggle-favorite-chain') { const type = action.split('-')[2] + 's'; const item = state[type].find(i => i.id === id); if (item) { item.isFavorite = !item.isFavorite; await storage.set({ [type]: state[type] }); render(); } return; }
-    if (action === 'run-prompt') { const p = state.prompts.find(p => p.id === id); if (!p) return; const v = extractVariables(p.text); if (v.length === 0) { executeInContentScript({ type: 'execute-prompt', text: p.text }); } else { state.pendingExecution = { type: 'prompt', data: p }; renderVariableInputs(v); state.currentView = 'variableInput'; render(); }
-    } else if (action === 'run-chain') { const c = state.chains.find(c => c.id === id); if (!c) return; const a = c.prompts.map(p => p.text).join(' '); const v = extractVariables(a); if (v.length === 0) { executeInContentScript({ type: 'execute-chain', chain: c }); } else { state.pendingExecution = { type: 'chain', data: c }; renderVariableInputs(v); state.currentView = 'variableInput'; render(); }
-    } else if (action === 'edit-prompt') { const p = state.prompts.find(p => p.id === id); if (!p) return; state.currentView = 'promptEditor'; state.editingPromptId = id; promptEditorTitle.textContent = 'Prompt bearbeiten'; promptIdInput.value = p.id; promptTitleInput.value = p.title; promptTextInput.value = p.text; promptDescriptionInput.value = p.description; if (promptTagsInput) promptTagsInput.value = (p.tags || []).join(', '); render(); setTimeout(() => autoResizeTextarea(promptTextInput), 0);
-    } else if (action === 'edit-chain') {
-        const c = state.chains.find(c => c.id === id);
-        if (!c) return;
-        state.chainBeingEdited = JSON.parse(JSON.stringify(c));
-        state.currentView = 'chainEditor';
-        chainEditorTitle.textContent = 'Chain bearbeiten';
-        chainNameInput.value = c.name;
-        if (chainTagsInput) chainTagsInput.value = (c.tags || []).join(', ');
-        renderChainPromptInputs();
-        render();
-    } else if (action === 'delete-prompt' || action === 'delete-chain') { const type = action.split('-')[1]; const listName = type + 's'; if (confirm(`Diese(n) ${type} wirklich löschen?`)) { state[listName] = state[listName].filter(i => i.id !== id); await storage.set({ [listName]: state[listName] }); render(); } }
+const handleListClick = async (e) => {
+    const btn = e.target.closest('button');
+    if (btn) {
+        const { action, id } = btn.dataset;
+        if (action === 'toggle-favorite-prompt' || action === 'toggle-favorite-chain') {
+            const type = action.split('-')[2] + 's';
+            const item = state[type].find(i => i.id === id);
+            if (item) {
+                item.isFavorite = !item.isFavorite;
+                await storage.set({ [type]: state[type] });
+                render();
+            }
+            return;
+        }
+        if (action === 'run-prompt') {
+            const p = state.prompts.find(p => p.id === id);
+            if (!p) return;
+            const v = extractVariables(p.text);
+            if (v.length === 0) {
+                executeInContentScript({ type: 'execute-prompt', text: p.text });
+            } else {
+                state.pendingExecution = { type: 'prompt', data: p };
+                renderVariableInputs(v);
+                state.currentView = 'variableInput';
+                render();
+            }
+        } else if (action === 'run-chain') {
+            const c = state.chains.find(c => c.id === id);
+            if (!c) return;
+            const a = c.prompts.map(p => p.text).join(' ');
+            const v = extractVariables(a);
+            if (v.length === 0) {
+                executeInContentScript({ type: 'execute-chain', chain: c });
+            } else {
+                state.pendingExecution = { type: 'chain', data: c };
+                renderVariableInputs(v);
+                state.currentView = 'variableInput';
+                render();
+            }
+        } else if (action === 'edit-prompt') {
+            const p = state.prompts.find(p => p.id === id);
+            if (!p) return;
+            state.currentView = 'promptEditor';
+            state.editingPromptId = id;
+            promptEditorTitle.textContent = 'Prompt bearbeiten';
+            promptIdInput.value = p.id;
+            promptTitleInput.value = p.title;
+            promptTextInput.value = p.text;
+            promptDescriptionInput.value = p.description;
+            if (promptTagsInput) promptTagsInput.value = (p.tags || []).join(', ');
+            render();
+            setTimeout(() => autoResizeTextarea(promptTextInput), 0);
+        } else if (action === 'edit-chain') {
+            const c = state.chains.find(c => c.id === id);
+            if (!c) return;
+            state.chainBeingEdited = JSON.parse(JSON.stringify(c));
+            state.currentView = 'chainEditor';
+            chainEditorTitle.textContent = 'Chain bearbeiten';
+            chainNameInput.value = c.name;
+            if (chainTagsInput) chainTagsInput.value = (c.tags || []).join(', ');
+            renderChainPromptInputs();
+            render();
+        } else if (action === 'delete-prompt' || action === 'delete-chain') {
+            const type = action.split('-')[1];
+            const listName = type + 's';
+            if (confirm(`Diese(n) ${type} wirklich löschen?`)) {
+                state[listName] = state[listName].filter(i => i.id !== id);
+                await storage.set({ [listName]: state[listName] });
+                render();
+            }
+        }
+        return;
+    }
+    const card = e.target.closest('.item-card');
+    if (card) {
+        card.classList.toggle('expanded');
+        card.classList.toggle('collapsed');
+    }
 };
 const handleSavePrompt = async (e) => { e.preventDefault(); if (!promptTitleInput.value || !promptTextInput.value) return; const p = state.editingPromptId ? state.prompts.find(p => p.id === state.editingPromptId) : null; const tags = promptTagsInput ? promptTagsInput.value.split(',').map(t => t.trim()).filter(Boolean) : []; const n = { id: state.editingPromptId || self.crypto.randomUUID(), title: promptTitleInput.value, text: promptTextInput.value, description: promptDescriptionInput.value, tags, isFavorite: p ? p.isFavorite : false }; if (state.editingPromptId) { state.prompts = state.prompts.map(p => p.id === state.editingPromptId ? n : p); } else { state.prompts.push(n); } await storage.set({ prompts: state.prompts }); state.editingPromptId = null; handleNavClick('prompts'); };
 const handleSaveChain = async (e) => {
