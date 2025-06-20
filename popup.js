@@ -142,7 +142,7 @@ const renderPrompts = () => {
     const term = searchTerm.trim().toLowerCase();
     let list = [...state.prompts];
     if (showOnlyFavorites) list = list.filter(p => p.isFavorite);
-    if (activeTags.length) list = list.filter(p => activeTags.every(t => (p.tags || []).includes(t)));
+    if (activeTags.length) list = list.filter(p => (p.tags || []).some(tag => activeTags.includes(tag)));
     if (term) {
         list = list.filter(p => {
             const haystack = `${p.title} ${(p.description || '')} ${(p.tags || []).join(' ')}`.toLowerCase();
@@ -175,7 +175,7 @@ const renderChains = () => {
     const term = searchTerm.trim().toLowerCase();
     let list = [...state.chains];
     if (showOnlyFavorites) list = list.filter(c => c.isFavorite);
-    if (activeTags.length) list = list.filter(c => activeTags.every(t => (c.tags || []).includes(t)));
+    if (activeTags.length) list = list.filter(c => (c.tags || []).some(tag => activeTags.includes(tag)));
     if (term) {
         list = list.filter(c => {
             const haystack = `${c.name} ${(c.tags || []).join(' ')}`.toLowerCase();
