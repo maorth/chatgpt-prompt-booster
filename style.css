@@ -73,6 +73,46 @@ nav button:not(.active):hover { background-color: var(--bg-tertiary); color: var
     margin: 0.5rem auto;
     width: 100%;
 }
+#tags-filter-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    margin: 0.25rem 0 0.5rem;
+}
+#tags-filter-container .tag-chip {
+    cursor: pointer;
+    user-select: none;
+}
+#tags-filter-container .tag-chip.selected {
+    background-color: var(--accent);
+    color: var(--text-primary);
+}
+
+#favorites-filter-btn {
+    width: 40px;
+    height: 40px;
+    background: none;
+    border: none;
+    border-radius: 50%;
+    color: var(--text-secondary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s, color 0.2s;
+}
+#favorites-filter-btn:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: var(--text-primary);
+}
+#favorites-filter-btn.active {
+    color: var(--favorite);
+}
+
+#favorites-filter-btn svg {
+    width: 20px;
+    height: 20px;
+}
 
 #search-box {
     flex: 1;
