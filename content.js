@@ -173,7 +173,7 @@
             num.style.position = 'absolute';
             num.style.top = '50%';
             num.style.left = '50%';
-            num.style.transform = 'translate(-50%, -50%)';
+            num.style.transform = 'translate(-50%, -50%) rotate(-90deg)';
 
 
             c.appendChild(svg);
