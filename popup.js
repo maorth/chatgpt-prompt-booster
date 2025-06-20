@@ -18,7 +18,8 @@ let state = {
     pendingExecution: null,
     chainBeingEdited: null,
     theme: 'dark',
-    chainDelay: 0
+    chainDelay: 0,
+    showTagsFilter: true
 };
 let draggedItemIndex = null;
 let searchTerm = '';
@@ -33,7 +34,8 @@ let mainView, promptEditorView, chainEditorView, variableInputView, contentList,
     chainIdInput, chainNameInput, chainTagsInput, chainPromptsContainer, addPromptToChainBtn,
     saveChainBtn, cancelChainBtn, variableFieldsContainer, executeVariablePromptBtn,
     cancelVariableInputBtn, exportBtn, importBtn, importFileInput,
-    quickThemeToggleBtn, chainDelayInput, searchAddContainer;
+    quickThemeToggleBtn, chainDelayInput, searchAddContainer,
+    showTagsFilterInput;
 let favoritesToggleBtn, tagsFilterContainer;
 
 const queryElements = () => {
@@ -77,17 +79,19 @@ const queryElements = () => {
     importFileInput = document.getElementById('import-file');
     quickThemeToggleBtn = document.getElementById('quick-theme-toggle');
     chainDelayInput = document.getElementById('chain-delay');
+    showTagsFilterInput = document.getElementById('show-tags-filter');
 };
 
 // --- DATA HELPERS & RENDERERS ---
 const storage = { get: (k) => new Promise(r => chrome.storage.local.get(k, r)), set: (i) => new Promise(r => chrome.storage.local.set(i, r)) };
 const loadData = async () => {
-    const d = await storage.get(['prompts', 'chains', 'theme', 'chainDelay']);
+    const d = await storage.get(['prompts', 'chains', 'theme', 'chainDelay', 'showTagsFilter']);
     state.prompts = (d.prompts || []).map(p => ({ ...p, tags: Array.isArray(p.tags) ? p.tags : [] }));
     state.chains = (d.chains || []).map(c => ({ ...c, tags: Array.isArray(c.tags) ? c.tags : [] }));
     state.theme = d.theme || 'dark';
     state.chainDelay = typeof d.chainDelay === 'number' && d.chainDelay >= 0 ? d.chainDelay : 0;
-}; 
+    state.showTagsFilter = d.showTagsFilter !== false;
+};
 
 const render = () => {
     const isMainView = !['promptEditor', 'chainEditor', 'variableInput'].includes(state.currentView);
@@ -96,7 +100,10 @@ const render = () => {
     chainEditorView.classList.toggle('hidden', state.currentView !== 'chainEditor');
     variableInputView.classList.toggle('hidden', state.currentView !== 'variableInput');
     searchAddContainer.classList.toggle('hidden', !isMainView || state.currentView === 'settings');
-    if (tagsFilterContainer) tagsFilterContainer.classList.toggle('hidden', !isMainView || state.currentView === 'settings');
+    if (tagsFilterContainer) {
+        const hide = !isMainView || state.currentView === 'settings' || !state.showTagsFilter;
+        tagsFilterContainer.classList.toggle('hidden', hide);
+    }
     if (favoritesToggleBtn) {
         favoritesToggleBtn.innerHTML = showOnlyFavorites ? ICON_STAR_FILLED : ICON_STAR_OUTLINE;
         favoritesToggleBtn.classList.toggle('active', showOnlyFavorites);
@@ -111,7 +118,6 @@ const render = () => {
         if (state.currentView === 'prompts') {
             renderPrompts();
             renderTagFilter();
-            if (tagsFilterContainer) tagsFilterContainer.classList.remove('hidden');
             addNewBtn.innerHTML = ICON_PLUS;
             addNewBtn.title = 'Neuen Prompt erstellen';
             addNewBtn.setAttribute('aria-label', 'Neuen Prompt erstellen');
@@ -121,7 +127,6 @@ const render = () => {
         } else if (state.currentView === 'chains') {
             renderChains();
             renderTagFilter();
-            if (tagsFilterContainer) tagsFilterContainer.classList.remove('hidden');
             addNewBtn.innerHTML = ICON_PLUS;
             addNewBtn.title = 'Neue Chain erstellen';
             addNewBtn.setAttribute('aria-label', 'Neue Chain erstellen');
@@ -132,7 +137,6 @@ const render = () => {
             addNewBtn.classList.add('hidden');
             contentList.classList.add('hidden');
             settingsContainer.classList.remove('hidden');
-            if (tagsFilterContainer) tagsFilterContainer.classList.add('hidden');
             if (chainDelayInput) chainDelayInput.value = state.chainDelay;
         }
     }
@@ -213,7 +217,8 @@ const renderTagFilter = () => {
         const selected = activeTags.includes(t) ? 'selected' : '';
         return `<span class="tag-chip ${selected}" data-tag="${t}" title="${t}">${t} (${counts[t]})</span>`;
     }).join('');
-    tagsFilterContainer.classList.toggle('hidden', tags.length === 0);
+    const hide = tags.length === 0 || !state.showTagsFilter;
+    tagsFilterContainer.classList.toggle('hidden', hide);
 };
 const renderChainPromptInputs = () => {
     if (!state.chainBeingEdited) return;
@@ -471,12 +476,20 @@ const handleDelayChange = async () => {
     await storage.set({ chainDelay: val });
 };
 
+const handleShowTagsFilterChange = async () => {
+    if (!showTagsFilterInput) return;
+    state.showTagsFilter = showTagsFilterInput.checked;
+    await storage.set({ showTagsFilter: state.showTagsFilter });
+    render();
+};
+
 // --- INITIALIZATION ---
 document.addEventListener('DOMContentLoaded', async () => {
     queryElements();
     await loadData();
     applyTheme();
     if (chainDelayInput) chainDelayInput.value = state.chainDelay;
+    if (showTagsFilterInput) showTagsFilterInput.checked = state.showTagsFilter;
     if (exportBtn) exportBtn.querySelector('.btn-icon').innerHTML = ICON_DOWNLOAD;
     if (importBtn) importBtn.querySelector('.btn-icon').innerHTML = ICON_UPLOAD;
     render();
@@ -507,6 +520,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     importBtn.addEventListener('click', handleImportClick);
     importFileInput.addEventListener('change', handleImportFile);
     if (chainDelayInput) chainDelayInput.addEventListener('change', handleDelayChange);
+    if (showTagsFilterInput) showTagsFilterInput.addEventListener('change', handleShowTagsFilterChange);
     if (quickThemeToggleBtn) quickThemeToggleBtn.addEventListener('click', handleThemeToggle);
     document.addEventListener('keydown', (e) => {
         if (e.altKey && e.key.toLowerCase() === 'l') {

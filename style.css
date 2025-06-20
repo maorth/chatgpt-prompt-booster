@@ -299,3 +299,20 @@ nav button:not(.active):hover { background-color: var(--bg-tertiary); color: var
     width: auto;
     flex: 1;
 }
+
+#settings-container .checkbox-group {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0.5rem 0 1rem;
+}
+
+#settings-container .checkbox-group label {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+}
+
+#settings-container .checkbox-group input[type="checkbox"] {
+    width: 1rem;
+    height: 1rem;
+}
