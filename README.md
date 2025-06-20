@@ -11,6 +11,10 @@ A Chrome extension for managing and executing ChatGPT prompts and prompt chains.
 - **Popup interface**: edit, delete, favorite, and run prompts or chains.
 - **Content script integration**: automatically sends prompts to an open ChatGPT tab and waits for the response.
 - **Light/Dark theme switch**: toggle between light and dark modes via the header icon or Alt+L.
+- **Collapsible cards**: click a prompt or chain to show or hide its details for a cleaner overview.
+- **Search**: filter items by title, description or tags using the search box.
+- **Drag and drop**: reorder prompts within a chain via a simple drag handle.
+- **Import/Export**: backup all prompts and chains as JSON files from the settings view.
 
 ## Installation
 
@@ -29,6 +33,7 @@ The extension icon will appear in your toolbar.
 4. Click the play button to execute a prompt or chain in the active ChatGPT tab.
 5. If variables are detected, you will be prompted to enter values before execution.
 6. Switch between light and dark themes using the header icon or the `Alt+L` shortcut. The selected mode is stored using `chrome.storage.local` so your preference is applied whenever you reopen the popup.
+7. Use the *Einstellungen* (settings) tab to export a backup or import prompts from a JSON file.
 
 ## File Overview
 
