@@ -79,8 +79,31 @@
             o.style.zIndex = '9999';
             o.style.fontSize = '14px';
             o.style.transition = 'background 0.3s ease, transform 0.2s ease';
+            const textDiv = document.createElement('div');
+            textDiv.className = 'chain-status-text';
+            const bar = document.createElement('div');
+            bar.className = 'chain-progress';
+            bar.style.width = '100%';
+            bar.style.height = '6px';
+            bar.style.marginTop = '4px';
+            bar.style.background = '#333333';
+            bar.style.borderRadius = '4px';
+            bar.style.overflow = 'hidden';
+            bar.style.display = 'none';
+            const fill = document.createElement('div');
+            fill.className = 'progress-fill';
+            fill.style.height = '100%';
+            fill.style.width = '0%';
+            fill.style.background = '#32CD32';
+            bar.appendChild(fill);
+            o.appendChild(textDiv);
+            o.appendChild(bar);
             document.body.appendChild(o);
         }
+        const textDiv = o.querySelector('.chain-status-text');
+        const bar = o.querySelector('.chain-progress');
+        const fill = o.querySelector('.progress-fill');
+
         let text = '';
         if (typeof step === 'number' && typeof total === 'number') {
             text = `Prompt ${step} von ${total} wird ausgeführt.`;
@@ -89,7 +112,24 @@
             text += ` Warte ${waitSec}s...`;
         }
         if (!text) text = 'Chain abgeschlossen.';
-        o.textContent = text;
+
+        if (textDiv) textDiv.textContent = text;
+
+        if (bar && fill) {
+            if (typeof waitSec === 'number' && waitSec > 0) {
+                bar.style.display = 'block';
+                if (!bar.dataset.started) {
+                    fill.style.transition = `width ${delaySeconds}s linear`;
+                    fill.style.width = '0%';
+                    requestAnimationFrame(() => { fill.style.width = '100%'; });
+                    bar.dataset.started = '1';
+                }
+            } else {
+                bar.style.display = 'none';
+                fill.style.width = '0%';
+                bar.dataset.started = '';
+            }
+        }
     };
 
     const hideStatusOverlay = (delay = 0) => {
