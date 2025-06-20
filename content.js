@@ -171,7 +171,10 @@
             const num = document.createElement('div');
             num.className = 'countdown-number';
             num.style.position = 'absolute';
-            num.style.transform = 'rotate(90deg)';
+            num.style.top = '50%';
+            num.style.left = '50%';
+            num.style.transform = 'translate(-50%, -50%)';
+
 
             c.appendChild(svg);
             c.appendChild(num);
