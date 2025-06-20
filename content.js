@@ -175,6 +175,7 @@
             num.style.left = '50%';
             num.style.transform = 'translate(-50%, -50%)';
 
+
             c.appendChild(svg);
             c.appendChild(num);
             document.body.appendChild(c);
