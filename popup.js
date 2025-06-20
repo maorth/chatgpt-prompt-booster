@@ -17,7 +17,8 @@ let state = {
     chains: [],
     pendingExecution: null,
     chainBeingEdited: null,
-    theme: 'dark'
+    theme: 'dark',
+    chainDelay: 0
 };
 let draggedItemIndex = null;
 let searchTerm = '';
@@ -30,7 +31,7 @@ let mainView, promptEditorView, chainEditorView, variableInputView, contentList,
     chainIdInput, chainNameInput, chainTagsInput, chainPromptsContainer, addPromptToChainBtn,
     saveChainBtn, cancelChainBtn, variableFieldsContainer, executeVariablePromptBtn,
     cancelVariableInputBtn, exportBtn, importBtn, importFileInput,
-    quickThemeToggleBtn, searchAddContainer;
+    quickThemeToggleBtn, chainDelayInput, searchAddContainer;
 
 const queryElements = () => {
     mainView = document.getElementById('main-view');
@@ -70,16 +71,18 @@ const queryElements = () => {
     importBtn = document.getElementById('import-btn');
     importFileInput = document.getElementById('import-file');
     quickThemeToggleBtn = document.getElementById('quick-theme-toggle');
+    chainDelayInput = document.getElementById('chain-delay');
 };
 
 // --- DATA HELPERS & RENDERERS ---
 const storage = { get: (k) => new Promise(r => chrome.storage.local.get(k, r)), set: (i) => new Promise(r => chrome.storage.local.set(i, r)) };
 const loadData = async () => {
-    const d = await storage.get(['prompts', 'chains', 'theme']);
+    const d = await storage.get(['prompts', 'chains', 'theme', 'chainDelay']);
     state.prompts = (d.prompts || []).map(p => ({ ...p, tags: Array.isArray(p.tags) ? p.tags : [] }));
     state.chains = (d.chains || []).map(c => ({ ...c, tags: Array.isArray(c.tags) ? c.tags : [] }));
     state.theme = d.theme || 'dark';
-};
+    state.chainDelay = typeof d.chainDelay === 'number' && d.chainDelay >= 0 ? d.chainDelay : 0;
+}; 
 
 const render = () => {
     const isMainView = !['promptEditor', 'chainEditor', 'variableInput'].includes(state.currentView);
@@ -112,6 +115,7 @@ const render = () => {
             addNewBtn.classList.add('hidden');
             contentList.classList.add('hidden');
             settingsContainer.classList.remove('hidden');
+            if (chainDelayInput) chainDelayInput.value = state.chainDelay;
         }
     }
 };
@@ -258,7 +262,7 @@ const handleListClick = async (e) => {
             const a = c.prompts.map(p => p.text).join(' ');
             const v = extractVariables(a);
             if (v.length === 0) {
-                executeInContentScript({ type: 'execute-chain', chain: c });
+                executeInContentScript({ type: 'execute-chain', chain: c, delay: state.chainDelay });
             } else {
                 state.pendingExecution = { type: 'chain', data: c };
                 renderVariableInputs(v);
@@ -334,7 +338,30 @@ const handleSaveChain = async (e) => {
 };
 const handleAddPromptToChain = (e) => { e.preventDefault(); if (!state.chainBeingEdited) return; state.chainBeingEdited.prompts.push({ text: '' }); renderChainPromptInputs(); };
 const handleRemovePromptFromChain = (e) => { const t = e.target.closest('button[data-action="remove-prompt-from-chain"]'); if (!t || !state.chainBeingEdited) return; e.preventDefault(); const i = parseInt(t.dataset.index); state.chainBeingEdited.prompts.splice(i, 1); renderChainPromptInputs(); };
-const handleVariableSubmit = (e) => { e.preventDefault(); if (!state.pendingExecution) return; const v = {}; variableFieldsContainer.querySelectorAll('.variable-input').forEach(i => { v[i.name] = i.value; }); const { type, data } = state.pendingExecution; const sub = t => { let p = t; for (const n in v) { p = p.replace(new RegExp(`{{\\s*${n}\\s*}}`, 'g'), v[n]); } return p; }; if (type === 'prompt') { executeInContentScript({ type: 'execute-prompt', text: sub(data.text) }); } else if (type === 'chain') { const p = { ...data, prompts: data.prompts.map(p => ({ ...p, text: sub(p.text) })) }; executeInContentScript({ type: 'execute-chain', chain: p }); } state.pendingExecution = null; handleNavClick(type === 'prompt' ? 'prompts' : 'chains'); };
+const handleVariableSubmit = (e) => {
+    e.preventDefault();
+    if (!state.pendingExecution) return;
+    const v = {};
+    variableFieldsContainer.querySelectorAll('.variable-input').forEach(i => {
+        v[i.name] = i.value;
+    });
+    const { type, data } = state.pendingExecution;
+    const sub = t => {
+        let p = t;
+        for (const n in v) {
+            p = p.replace(new RegExp(`{{\\s*${n}\\s*}}`, 'g'), v[n]);
+        }
+        return p;
+    };
+    if (type === 'prompt') {
+        executeInContentScript({ type: 'execute-prompt', text: sub(data.text) });
+    } else if (type === 'chain') {
+        const p = { ...data, prompts: data.prompts.map(p => ({ ...p, text: sub(p.text) })) };
+        executeInContentScript({ type: 'execute-chain', chain: p, delay: state.chainDelay });
+    }
+    state.pendingExecution = null;
+    handleNavClick(type === 'prompt' ? 'prompts' : 'chains');
+};
 const executeInContentScript = (d) => { chrome.tabs.query({ active: true, currentWindow: true }, (t) => { const c = t.find(t => t.url && (t.url.startsWith("https://chat.openai.com") || t.url.startsWith("https://chatgpt.com"))); if (c) { chrome.scripting.executeScript({ target: { tabId: c.id }, func: (d) => document.dispatchEvent(new CustomEvent('run-from-popup', { detail: d })), args: [d] }); window.close(); } else { alert('Bitte öffne zuerst einen Tab mit ChatGPT.'); } }); };
 const handleDragStart = (e) => { const h = e.target.closest('.drag-handle'); if (!h) { e.preventDefault(); return; } const t = h.closest('.chain-prompt-item'); if (!t) return; draggedItemIndex = parseInt(t.dataset.index); setTimeout(() => t.classList.add('dragging'), 0); };
 const handleDragEnd = (e) => { document.querySelectorAll('.chain-prompt-item.dragging').forEach(el => el.classList.remove('dragging')); draggedItemIndex = null; };
@@ -387,11 +414,22 @@ const handleThemeToggle = async () => {
     await storage.set({ theme: state.theme });
 };
 
+const handleDelayChange = async () => {
+    if (!chainDelayInput) return;
+    let val = parseInt(chainDelayInput.value, 10);
+    if (isNaN(val) || val < 0) val = 0;
+    if (val > 60) val = 60;
+    chainDelayInput.value = val;
+    state.chainDelay = val;
+    await storage.set({ chainDelay: val });
+};
+
 // --- INITIALIZATION ---
 document.addEventListener('DOMContentLoaded', async () => {
     queryElements();
     await loadData();
     applyTheme();
+    if (chainDelayInput) chainDelayInput.value = state.chainDelay;
     if (exportBtn) exportBtn.querySelector('.btn-icon').innerHTML = ICON_DOWNLOAD;
     if (importBtn) importBtn.querySelector('.btn-icon').innerHTML = ICON_UPLOAD;
     render();
@@ -419,6 +457,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     exportBtn.addEventListener('click', handleExport);
     importBtn.addEventListener('click', handleImportClick);
     importFileInput.addEventListener('change', handleImportFile);
+    if (chainDelayInput) chainDelayInput.addEventListener('change', handleDelayChange);
     if (quickThemeToggleBtn) quickThemeToggleBtn.addEventListener('click', handleThemeToggle);
     document.addEventListener('keydown', (e) => {
         if (e.altKey && e.key.toLowerCase() === 'l') {
