@@ -64,11 +64,11 @@
     };
 
     // --- Logik für Ketten ---
-    const showDelayOverlay = (s) => {
-        let o = document.getElementById('chain-delay-overlay');
+    const updateStatusOverlay = (step, total, waitSec) => {
+        let o = document.getElementById('chain-status-overlay');
         if (!o) {
             o = document.createElement('div');
-            o.id = 'chain-delay-overlay';
+            o.id = 'chain-status-overlay';
             o.style.position = 'fixed';
             o.style.bottom = '1rem';
             o.style.right = '1rem';
@@ -80,25 +80,37 @@
             o.style.fontSize = '14px';
             document.body.appendChild(o);
         }
-        o.textContent = `Warte ${s} Sekunden...`;
+        let text = '';
+        if (typeof step === 'number' && typeof total === 'number') {
+            text = `Prompt ${step} von ${total} wird ausgeführt.`;
+        }
+        if (typeof waitSec === 'number' && waitSec > 0) {
+            text += ` Warte ${waitSec}s...`;
+        }
+        if (!text) text = 'Chain abgeschlossen.';
+        o.textContent = text;
     };
 
-    const hideDelayOverlay = () => {
-        const o = document.getElementById('chain-delay-overlay');
-        if (o) o.remove();
+    const hideStatusOverlay = (delay = 0) => {
+        const o = document.getElementById('chain-status-overlay');
+        if (!o) return;
+        if (delay > 0) {
+            setTimeout(() => o.remove(), delay);
+        } else {
+            o.remove();
+        }
     };
 
     const waitBeforeNext = (cb) => {
         if (delaySeconds <= 0) { cb(); return; }
         let remain = delaySeconds;
-        showDelayOverlay(remain);
+        updateStatusOverlay(currentPromptIndex, currentChain.length, remain);
         const i = setInterval(() => {
             remain--;
             if (remain > 0) {
-                showDelayOverlay(remain);
+                updateStatusOverlay(currentPromptIndex, currentChain.length, remain);
             } else {
                 clearInterval(i);
-                hideDelayOverlay();
                 cb();
             }
         }, 1000);
@@ -109,9 +121,11 @@
             isExecuting = false;
             currentChain = [];
             currentPromptIndex = 0;
-            hideDelayOverlay();
+            updateStatusOverlay();
+            hideStatusOverlay(2000);
             return;
         }
+        updateStatusOverlay(currentPromptIndex + 1, currentChain.length);
         const promptText = currentChain[currentPromptIndex].text;
 
         submitPrompt(promptText, () => {
@@ -120,7 +134,8 @@
                 isExecuting = false;
                 currentChain = [];
                 currentPromptIndex = 0;
-                hideDelayOverlay();
+                updateStatusOverlay();
+                hideStatusOverlay(2000);
             } else {
                 waitBeforeNext(runNextChainStep);
             }
