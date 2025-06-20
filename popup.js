@@ -30,7 +30,7 @@ let mainView, promptEditorView, chainEditorView, variableInputView, contentList,
     chainIdInput, chainNameInput, chainTagsInput, chainPromptsContainer, addPromptToChainBtn,
     saveChainBtn, cancelChainBtn, variableFieldsContainer, executeVariablePromptBtn,
     cancelVariableInputBtn, exportBtn, importBtn, importFileInput,
-    quickThemeToggleBtn;
+    quickThemeToggleBtn, searchAddContainer;
 
 const queryElements = () => {
     mainView = document.getElementById('main-view');
@@ -38,6 +38,7 @@ const queryElements = () => {
     chainEditorView = document.getElementById('chain-editor-view');
     variableInputView = document.getElementById('variable-input-view');
     contentList = document.getElementById('content-list');
+    searchAddContainer = document.getElementById('search-add-container');
     searchBox = document.getElementById('search-box');
     settingsContainer = document.getElementById('settings-container');
     addNewBtn = document.getElementById('add-new-btn');
@@ -86,7 +87,7 @@ const render = () => {
     promptEditorView.classList.toggle('hidden', state.currentView !== 'promptEditor');
     chainEditorView.classList.toggle('hidden', state.currentView !== 'chainEditor');
     variableInputView.classList.toggle('hidden', state.currentView !== 'variableInput');
-    searchBox.classList.toggle('hidden', !isMainView || state.currentView === 'settings');
+    searchAddContainer.classList.toggle('hidden', !isMainView || state.currentView === 'settings');
     if (isMainView) {
         showPromptsBtn.classList.toggle('active', state.currentView === 'prompts');
         showChainsBtn.classList.toggle('active', state.currentView === 'chains');
