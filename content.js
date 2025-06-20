@@ -132,8 +132,6 @@
             c.style.alignItems = 'center';
             c.style.justifyContent = 'center';
             c.style.color = '#fff';
-            c.style.fontWeight = 'bold';
-            c.style.fontSize = '14px';
             c.style.transition = 'opacity 0.3s ease';
             c.style.opacity = '0';
 
@@ -163,38 +161,34 @@
             progress.setAttribute('stroke-width', '4');
             progress.setAttribute('fill', 'transparent');
             progress.style.strokeDasharray = circumference;
-            progress.style.strokeDashoffset = '0';
+            progress.style.strokeDashoffset = circumference;
 
             svg.appendChild(track);
             svg.appendChild(progress);
 
-            const num = document.createElement('div');
-            num.className = 'countdown-number';
-            num.style.position = 'absolute';
-            num.style.top = '50%';
-            num.style.left = '50%';
-            num.style.transform = 'translate(-50%, -50%) rotate(-90deg)';
-
-
             c.appendChild(svg);
-            c.appendChild(num);
             document.body.appendChild(c);
             // store circumference
             c.dataset.circumference = circumference.toString();
         }
         c.style.opacity = '1';
         updateCountdownTimer(duration);
+        const circle = c.querySelector('.countdown-progress');
+        if (circle) {
+            circle.style.transition = `stroke-dashoffset ${duration}s linear`;
+            // Trigger layout so transition applies when offset changes
+            circle.getBoundingClientRect();
+            circle.style.strokeDashoffset = '0';
+        }
     };
 
     const updateCountdownTimer = (remain) => {
         const c = document.getElementById('chain-countdown-timer');
         if (!c) return;
-        const num = c.querySelector('.countdown-number');
         const circle = c.querySelector('.countdown-progress');
         const circumference = parseFloat(c.dataset.circumference || '0');
-        if (num) num.textContent = remain.toString();
         if (circle) {
-            const offset = circumference * (1 - remain / countdownTotal);
+            const offset = circumference * (remain / countdownTotal);
             circle.style.strokeDashoffset = offset.toString();
         }
     };
@@ -208,19 +202,12 @@
 
     const waitBeforeNext = (cb) => {
         if (delaySeconds <= 0) { cb(); return; }
-        let remain = delaySeconds;
         updateStatusOverlay(currentPromptIndex, currentChain.length);
-        showCountdownTimer(remain);
-        const i = setInterval(() => {
-            remain--;
-            if (remain > 0) {
-                updateCountdownTimer(remain);
-            } else {
-                clearInterval(i);
-                hideCountdownTimer();
-                cb();
-            }
-        }, 1000);
+        showCountdownTimer(delaySeconds);
+        setTimeout(() => {
+            hideCountdownTimer();
+            cb();
+        }, delaySeconds * 1000);
     };
 
     const runNextChainStep = () => {
