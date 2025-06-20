@@ -54,6 +54,17 @@ nav button.active { background-color: var(--accent); color: var(--text-primary);
 nav button:not(.active):hover { background-color: var(--bg-tertiary); color: var(--text-primary); }
 .hidden { display: none !important; }
 
+#main-content {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+    width: 100%;
+}
+
+#main-content #content-list {
+    padding-left: 0;
+    padding-right: 0;
+}
+
 #search-add-container {
     display: flex;
     justify-content: center;
