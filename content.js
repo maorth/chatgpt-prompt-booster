@@ -86,7 +86,7 @@
             bar.style.width = '100%';
             bar.style.height = '6px';
             bar.style.marginTop = '4px';
-            bar.style.background = 'rgba(255,255,255,0.3)';
+            bar.style.background = '#333333';
             bar.style.borderRadius = '4px';
             bar.style.overflow = 'hidden';
             bar.style.display = 'none';
@@ -94,7 +94,7 @@
             fill.className = 'progress-fill';
             fill.style.height = '100%';
             fill.style.width = '0%';
-            fill.style.background = '#4CAF50';
+            fill.style.background = '#32CD32';
             bar.appendChild(fill);
             o.appendChild(textDiv);
             o.appendChild(bar);
