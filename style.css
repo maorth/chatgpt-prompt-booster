@@ -189,7 +189,30 @@ nav button:not(.active):hover { background-color: var(--bg-tertiary); color: var
 .form-group label { display: block; font-size: 0.875rem; color: var(--text-secondary); margin-bottom: 0.25rem; }
 .form-group input, .form-group textarea { width: 100%; padding: 0.75rem; background-color: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 0.5rem; color: var(--text-primary); font-size: 1rem; }
 
-#prompt-text, .chain-prompt-item textarea { min-height: 80px; max-height: 200px; resize: none; overflow-y: auto; }
+#prompt-text,
+.chain-prompt-item textarea {
+    min-height: 200px;
+    max-height: 60vh;
+    resize: none;
+    overflow-y: auto;
+    width: 100%;
+    scrollbar-color: var(--bg-tertiary) var(--bg-secondary);
+}
+
+#prompt-text::-webkit-scrollbar,
+.chain-prompt-item textarea::-webkit-scrollbar {
+    width: 8px;
+}
+#prompt-text::-webkit-scrollbar-thumb,
+.chain-prompt-item textarea::-webkit-scrollbar-thumb {
+    background-color: var(--bg-tertiary);
+    border-radius: 4px;
+}
+#prompt-text::-webkit-scrollbar-track,
+.chain-prompt-item textarea::-webkit-scrollbar-track {
+    background-color: var(--bg-secondary);
+    border-radius: 4px;
+}
 .chain-prompt-item { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem; padding: 0.5rem; border: 1px solid transparent; border-radius: 0.5rem; transition: background-color 0.2s, border-color 0.2s; }
 .chain-prompt-item:hover { background-color: var(--bg-tertiary); }
 .chain-prompt-item textarea { flex-grow: 1; }
