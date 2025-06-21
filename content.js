@@ -4,6 +4,13 @@
     let currentPromptIndex = 0;
     let delaySeconds = 0;
 
+    // Registriere diesen Tab beim Hintergrundskript
+    try {
+        chrome.runtime.sendMessage({ type: 'register-chatgpt-tab' });
+    } catch (e) {
+        console.error('Failed to register ChatGPT tab', e);
+    }
+
     // --- DOM-Helfer ---
     const getSubmitButton = () => document.querySelector('button#composer-submit-button');
     const getInputArea = () => document.querySelector('div#prompt-textarea');
@@ -239,14 +246,14 @@
     };
 
     // --- Zentraler Event-Listener ---
-    document.addEventListener('run-from-popup', (e) => {
+    const handleRunRequest = (d) => {
         if (isExecuting) {
             alert('Es wird bereits ein Prompt oder eine Chain ausgeführt.');
             return;
         }
-        
+
         isExecuting = true;
-        const { type, text, chain, delay } = e.detail;
+        const { type, text, chain, delay } = d;
         delaySeconds = typeof delay === 'number' && delay >= 0 ? delay : 0;
 
         if (type === 'execute-prompt') {
@@ -257,6 +264,16 @@
             runNextChainStep();
         } else {
             isExecuting = false;
+        }
+    };
+
+    document.addEventListener('run-from-popup', (e) => {
+        handleRunRequest(e.detail);
+    });
+
+    chrome.runtime.onMessage.addListener((msg) => {
+        if (msg && msg.type === 'run-from-popup') {
+            handleRunRequest(msg.detail);
         }
     });
 
