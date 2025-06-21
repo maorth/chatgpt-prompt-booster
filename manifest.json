@@ -22,6 +22,10 @@
   },
   "side_panel": {
     "default_path": "sidepanel.html"
+
+  },
+  "side_panel": {
+    "default_path": "sidepanel.html"
   },
   "icons": {
     "16": "icons/icon16.png",
