@@ -450,6 +450,7 @@ const executeInContentScript = (d) => {
         if (typeof id === 'number') {
             chrome.scripting.executeScript({
                 target: { tabId: id },
+
                 func: (d) => document.dispatchEvent(new CustomEvent('run-from-popup', { detail: d })),
                 args: [d]
             });
