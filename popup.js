@@ -27,6 +27,7 @@ let state = {
     chainBeingEdited: null,
     theme: 'dark',
     accentColor: 'purple',
+    customAccentColor: '',
     chainDelay: 0,
     showTagsFilter: true
 };
@@ -44,7 +45,7 @@ let mainView, promptEditorView, chainEditorView, variableInputView, contentList,
     saveChainBtn, cancelChainBtn, variableFieldsContainer, executeVariablePromptBtn,
     cancelVariableInputBtn, exportBtn, importBtn, importFileInput,
     quickThemeToggleBtn, chainDelayInput, chainDelayDisplay, searchAddContainer,
-    showTagsFilterInput, accentColorSelect;
+    showTagsFilterInput, accentColorSelect, customAccentColorInput;
 let favoritesToggleBtn, tagsFilterContainer;
 
 const queryElements = () => {
@@ -91,6 +92,7 @@ const queryElements = () => {
     chainDelayDisplay = document.getElementById('chain-delay-display');
     showTagsFilterInput = document.getElementById('show-tags-filter');
     accentColorSelect = document.getElementById('accent-color-select');
+    customAccentColorInput = document.getElementById('custom-accent-color-input');
 };
 
 // --- DATA HELPERS & RENDERERS ---
@@ -119,11 +121,12 @@ const saveUIState = () => sessionStore.set({
     activeTags
 });
 const loadData = async () => {
-    const d = await storage.get(['prompts', 'chains', 'theme', 'accentColor', 'chainDelay', 'showTagsFilter']);
+    const d = await storage.get(['prompts', 'chains', 'theme', 'accentColor', 'customAccentColor', 'chainDelay', 'showTagsFilter']);
     state.prompts = (d.prompts || []).map(p => ({ ...p, tags: Array.isArray(p.tags) ? p.tags : [] }));
     state.chains = (d.chains || []).map(c => ({ ...c, tags: Array.isArray(c.tags) ? c.tags : [] }));
     state.theme = d.theme || 'dark';
     state.accentColor = d.accentColor || 'purple';
+    state.customAccentColor = d.customAccentColor || '';
     const storedDelay = typeof d.chainDelay === 'number' && d.chainDelay >= 0 ? d.chainDelay : 0;
     state.chainDelay = storedDelay > 10 ? 10 : storedDelay;
     state.showTagsFilter = d.showTagsFilter !== false;
@@ -559,11 +562,39 @@ const applyTheme = () => {
     }
 };
 
+const isValidHex = (val) => /^#(?:[0-9a-fA-F]{3}){1,2}$/.test(val);
+
+const darkenHex = (hex, factor) => {
+    let c = hex.replace('#', '');
+    if (c.length === 3) c = c.split('').map(x => x + x).join('');
+    let num = parseInt(c, 16);
+    let r = (num >> 16) & 255;
+    let g = (num >> 8) & 255;
+    let b = num & 255;
+    r = Math.round(r * (1 - factor));
+    g = Math.round(g * (1 - factor));
+    b = Math.round(b * (1 - factor));
+    const toHex = (n) => n.toString(16).padStart(2, '0');
+    return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+};
+
 const applyAccentColor = () => {
-    const preset = ACCENT_PRESETS[state.accentColor] || ACCENT_PRESETS.purple;
-    document.documentElement.style.setProperty('--accent', preset.color);
-    document.documentElement.style.setProperty('--accent-hover', preset.hover);
+    let color, hover;
+    if (state.accentColor === 'custom' && isValidHex(state.customAccentColor)) {
+        color = state.customAccentColor;
+        hover = darkenHex(color, 0.15);
+    } else {
+        const preset = ACCENT_PRESETS[state.accentColor] || ACCENT_PRESETS.purple;
+        color = preset.color;
+        hover = preset.hover;
+    }
+    document.documentElement.style.setProperty('--accent', color);
+    document.documentElement.style.setProperty('--accent-hover', hover);
     if (accentColorSelect) accentColorSelect.value = state.accentColor;
+    if (customAccentColorInput) {
+        customAccentColorInput.classList.toggle('hidden', state.accentColor !== 'custom');
+        if (state.accentColor === 'custom') customAccentColorInput.value = state.customAccentColor;
+    }
 };
 
 const handleThemeToggle = async () => {
@@ -576,8 +607,31 @@ const handleThemeToggle = async () => {
 const handleAccentColorChange = async () => {
     if (!accentColorSelect) return;
     state.accentColor = accentColorSelect.value;
+    if (state.accentColor !== 'custom') {
+        state.customAccentColor = '';
+    } else if (!state.customAccentColor) {
+        state.customAccentColor = '#6750A4';
+    }
+    if (customAccentColorInput) {
+        customAccentColorInput.value = state.customAccentColor;
+        customAccentColorInput.classList.toggle('hidden', state.accentColor !== 'custom');
+        if (state.accentColor === 'custom') customAccentColorInput.focus();
+    }
     applyAccentColor();
-    await storage.set({ accentColor: state.accentColor });
+    await storage.set({ accentColor: state.accentColor, customAccentColor: state.customAccentColor });
+};
+
+const handleCustomAccentInput = async () => {
+    if (!customAccentColorInput) return;
+    const val = customAccentColorInput.value.trim();
+    if (isValidHex(val)) {
+        state.customAccentColor = val;
+        customAccentColorInput.classList.remove('invalid');
+        await storage.set({ accentColor: 'custom', customAccentColor: val });
+        applyAccentColor();
+    } else {
+        customAccentColorInput.classList.add('invalid');
+    }
 };
 
 const updateDelayUI = () => {
@@ -657,6 +711,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     if (showTagsFilterInput) showTagsFilterInput.addEventListener('change', handleShowTagsFilterChange);
     if (accentColorSelect) accentColorSelect.addEventListener('change', handleAccentColorChange);
+    if (customAccentColorInput) customAccentColorInput.addEventListener('input', handleCustomAccentInput);
     if (quickThemeToggleBtn) quickThemeToggleBtn.addEventListener('click', handleThemeToggle);
     document.addEventListener('keydown', (e) => {
         if (e.altKey && e.key.toLowerCase() === 'l') {
