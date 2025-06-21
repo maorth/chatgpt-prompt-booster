@@ -36,7 +36,7 @@ html, body {
     min-width: 400px;
     min-height: 450px;
     max-width: 800px;
-    max-height: 600px;
+    max-height: 90vh; /* allow taller popup */
     resize: both;
     overflow: auto;
 }
@@ -46,7 +46,8 @@ body {
     color: var(--text-primary);
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     width: 480px; /* leicht vergrößert für mehr Komfort */
-    height: 650px; /* leicht vergrößert für mehr Komfort */
+    min-height: 650px; /* größerer Ausgangswert */
+    height: auto; /* passt sich an kürzere Inhalte an */
 }
 
 #app-container { display: flex; flex-direction: column; height: 100%; }
