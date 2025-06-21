@@ -34,7 +34,7 @@ let mainView, promptEditorView, chainEditorView, variableInputView, contentList,
     chainIdInput, chainNameInput, chainTagsInput, chainPromptsContainer, addPromptToChainBtn,
     saveChainBtn, cancelChainBtn, variableFieldsContainer, executeVariablePromptBtn,
     cancelVariableInputBtn, exportBtn, importBtn, importFileInput,
-    quickThemeToggleBtn, chainDelayInput, searchAddContainer,
+    quickThemeToggleBtn, chainDelayInput, chainDelayDisplay, searchAddContainer,
     showTagsFilterInput;
 let favoritesToggleBtn, tagsFilterContainer;
 
@@ -79,6 +79,7 @@ const queryElements = () => {
     importFileInput = document.getElementById('import-file');
     quickThemeToggleBtn = document.getElementById('quick-theme-toggle');
     chainDelayInput = document.getElementById('chain-delay');
+    chainDelayDisplay = document.getElementById('chain-delay-display');
     showTagsFilterInput = document.getElementById('show-tags-filter');
 };
 
@@ -137,7 +138,10 @@ const render = () => {
             addNewBtn.classList.add('hidden');
             contentList.classList.add('hidden');
             settingsContainer.classList.remove('hidden');
-            if (chainDelayInput) chainDelayInput.value = state.chainDelay;
+            if (chainDelayInput) {
+                chainDelayInput.value = state.chainDelay;
+                updateDelayUI();
+            }
         }
     }
 };
@@ -466,6 +470,15 @@ const handleThemeToggle = async () => {
     await storage.set({ theme: state.theme });
 };
 
+const updateDelayUI = () => {
+    if (!chainDelayInput) return;
+    const val = parseInt(chainDelayInput.value, 10) || 0;
+    if (chainDelayDisplay) chainDelayDisplay.textContent = `${val} s`;
+    const max = parseInt(chainDelayInput.max, 10) || 60;
+    const percentage = (val / max) * 100;
+    chainDelayInput.style.background = `linear-gradient(to right, var(--accent) 0%, var(--accent) ${percentage}%, var(--bg-tertiary) ${percentage}%, var(--bg-tertiary) 100%)`;
+};
+
 const handleDelayChange = async () => {
     if (!chainDelayInput) return;
     let val = parseInt(chainDelayInput.value, 10);
@@ -473,6 +486,7 @@ const handleDelayChange = async () => {
     if (val > 60) val = 60;
     chainDelayInput.value = val;
     state.chainDelay = val;
+    updateDelayUI();
     await storage.set({ chainDelay: val });
 };
 
@@ -488,7 +502,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     queryElements();
     await loadData();
     applyTheme();
-    if (chainDelayInput) chainDelayInput.value = state.chainDelay;
+    if (chainDelayInput) {
+        chainDelayInput.value = state.chainDelay;
+        updateDelayUI();
+    }
     if (showTagsFilterInput) showTagsFilterInput.checked = state.showTagsFilter;
     if (exportBtn) exportBtn.querySelector('.btn-icon').innerHTML = ICON_DOWNLOAD;
     if (importBtn) importBtn.querySelector('.btn-icon').innerHTML = ICON_UPLOAD;
@@ -519,7 +536,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     exportBtn.addEventListener('click', handleExport);
     importBtn.addEventListener('click', handleImportClick);
     importFileInput.addEventListener('change', handleImportFile);
-    if (chainDelayInput) chainDelayInput.addEventListener('change', handleDelayChange);
+    if (chainDelayInput) {
+        chainDelayInput.addEventListener('input', handleDelayChange);
+        chainDelayInput.addEventListener('change', handleDelayChange);
+    }
     if (showTagsFilterInput) showTagsFilterInput.addEventListener('change', handleShowTagsFilterChange);
     if (quickThemeToggleBtn) quickThemeToggleBtn.addEventListener('click', handleThemeToggle);
     document.addEventListener('keydown', (e) => {

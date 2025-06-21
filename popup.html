@@ -47,7 +47,10 @@
                         <h2>Chain-Einstellungen</h2>
                         <div class="form-group">
                             <label for="chain-delay">Verzögerung zwischen Prompts (Sekunden)</label>
-                            <input type="number" id="chain-delay" min="0" max="60" step="1" value="0" title="Wartezeit nach jedem Prompt in einer Chain">
+                            <div class="range-wrapper">
+                                <input type="range" id="chain-delay" min="0" max="60" step="1" value="0" title="Wartezeit nach jedem Prompt in einer Chain">
+                                <span id="chain-delay-display" class="slider-value">0&nbsp;s</span>
+                            </div>
                         </div>
                     </div>
 
