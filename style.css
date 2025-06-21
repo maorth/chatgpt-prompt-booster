@@ -27,7 +27,7 @@
     --favorite: #facc15; /* gelb/gold für Favoriten */
     --border-color: #d4d4d8; /* zinc-300 */
     --btn-secondary-hover: #52525b; /* zinc-600 */
-    --slider-track: #e0e0e0;
+    --slider-track: #bbbbbb;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -254,7 +254,7 @@ nav button:not(.active):hover { background-color: var(--bg-tertiary); color: var
 input[type="range"] {
     -webkit-appearance: none;
     width: 100%;
-    height: 3px;
+    height: 2px;
     border-radius: 9999px;
     background: var(--slider-track);
     outline: none;
@@ -262,39 +262,46 @@ input[type="range"] {
 }
 input[type="range"]::-webkit-slider-thumb {
     -webkit-appearance: none;
-    width: 14px;
-    height: 14px;
+    width: 16px;
+    height: 16px;
     border-radius: 50%;
     background: #ffffff;
+    border: 2px solid var(--accent);
     box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
     cursor: pointer;
     transition: transform 0.1s ease, box-shadow 0.2s ease;
 }
-input[type="range"]::-webkit-slider-thumb:hover {
+input[type="range"]:hover::-webkit-slider-thumb {
     box-shadow: 0 0 6px rgba(255, 255, 255, 0.6);
     transform: scale(1.1);
 }
-input[type="range"]::-webkit-slider-thumb:active {
+input[type="range"]:active::-webkit-slider-thumb {
     box-shadow: 0 0 6px var(--accent);
     transform: scale(1.15);
+}
+input[type="range"]:focus-visible::-webkit-slider-thumb {
+    box-shadow: 0 0 0 3px var(--accent);
 }
 input[type="range"]::-moz-range-thumb {
-    width: 14px;
-    height: 14px;
+    width: 16px;
+    height: 16px;
     border-radius: 50%;
     background: #ffffff;
-    border: none;
+    border: 2px solid var(--accent);
     box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
     cursor: pointer;
     transition: transform 0.1s ease, box-shadow 0.2s ease;
 }
-input[type="range"]::-moz-range-thumb:hover {
+input[type="range"]:hover::-moz-range-thumb {
     box-shadow: 0 0 6px rgba(255, 255, 255, 0.6);
     transform: scale(1.1);
 }
-input[type="range"]::-moz-range-thumb:active {
+input[type="range"]:active::-moz-range-thumb {
     box-shadow: 0 0 6px var(--accent);
     transform: scale(1.15);
+}
+input[type="range"]:focus-visible::-moz-range-thumb {
+    box-shadow: 0 0 0 3px var(--accent);
 }
 .slider-value { min-width: 2rem; text-align: right; color: var(--text-primary); font-size: 0.875rem; }
 
