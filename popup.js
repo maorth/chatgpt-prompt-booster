@@ -499,6 +499,7 @@ const executeInContentScript = (d) => {
 
                 injectIntoTab(chatGptTab);
             });
+
         }
     });
 };
