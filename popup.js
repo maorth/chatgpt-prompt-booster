@@ -477,7 +477,7 @@ const updateDelayUI = () => {
     if (chainDelayDisplay) chainDelayDisplay.textContent = `${val} s`;
     const max = parseInt(chainDelayInput.max, 10) || 10;
     const percentage = (val / max) * 100;
-    chainDelayInput.style.background = `linear-gradient(to right, var(--accent) 0%, var(--accent) ${percentage}%, var(--bg-tertiary) ${percentage}%, var(--bg-tertiary) 100%)`;
+    chainDelayInput.style.background = `linear-gradient(to right, var(--accent) 0%, var(--accent) ${percentage}%, var(--slider-track) ${percentage}%, var(--slider-track) 100%)`;
 };
 
 const handleDelayChange = async () => {
