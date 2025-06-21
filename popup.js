@@ -10,6 +10,14 @@ const ICON_EDIT = `<svg width="16" height="16" viewBox="0 0 24 24" fill="current
 const ICON_TRASH = `<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M6 7v12a2 2 0 002 2h8a2 2 0 002-2V7"/><path d="M4 7h16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 7V4h6v3"/></svg>`;
 const ICON_PLUS = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 
+const ACCENT_PRESETS = {
+    purple: { color: '#6750A4', hover: '#56318d' },
+    blue: { color: '#1E88E5', hover: '#1565C0' },
+    green: { color: '#43A047', hover: '#2E7D32' },
+    orange: { color: '#FB8C00', hover: '#EF6C00' },
+    red: { color: '#E53935', hover: '#C62828' }
+};
+
 // --- STATE & CONFIG ---
 let state = {
     currentView: 'prompts',
@@ -18,6 +26,7 @@ let state = {
     pendingExecution: null,
     chainBeingEdited: null,
     theme: 'dark',
+    accentColor: 'purple',
     chainDelay: 0,
     showTagsFilter: true
 };
@@ -35,7 +44,7 @@ let mainView, promptEditorView, chainEditorView, variableInputView, contentList,
     saveChainBtn, cancelChainBtn, variableFieldsContainer, executeVariablePromptBtn,
     cancelVariableInputBtn, exportBtn, importBtn, importFileInput,
     quickThemeToggleBtn, chainDelayInput, chainDelayDisplay, searchAddContainer,
-    showTagsFilterInput;
+    showTagsFilterInput, accentColorSelect;
 let favoritesToggleBtn, tagsFilterContainer;
 
 const queryElements = () => {
@@ -81,6 +90,7 @@ const queryElements = () => {
     chainDelayInput = document.getElementById('chain-delay');
     chainDelayDisplay = document.getElementById('chain-delay-display');
     showTagsFilterInput = document.getElementById('show-tags-filter');
+    accentColorSelect = document.getElementById('accent-color-select');
 };
 
 // --- DATA HELPERS & RENDERERS ---
@@ -109,10 +119,11 @@ const saveUIState = () => sessionStore.set({
     activeTags
 });
 const loadData = async () => {
-    const d = await storage.get(['prompts', 'chains', 'theme', 'chainDelay', 'showTagsFilter']);
+    const d = await storage.get(['prompts', 'chains', 'theme', 'accentColor', 'chainDelay', 'showTagsFilter']);
     state.prompts = (d.prompts || []).map(p => ({ ...p, tags: Array.isArray(p.tags) ? p.tags : [] }));
     state.chains = (d.chains || []).map(c => ({ ...c, tags: Array.isArray(c.tags) ? c.tags : [] }));
     state.theme = d.theme || 'dark';
+    state.accentColor = d.accentColor || 'purple';
     const storedDelay = typeof d.chainDelay === 'number' && d.chainDelay >= 0 ? d.chainDelay : 0;
     state.chainDelay = storedDelay > 10 ? 10 : storedDelay;
     state.showTagsFilter = d.showTagsFilter !== false;
@@ -548,10 +559,25 @@ const applyTheme = () => {
     }
 };
 
+const applyAccentColor = () => {
+    const preset = ACCENT_PRESETS[state.accentColor] || ACCENT_PRESETS.purple;
+    document.documentElement.style.setProperty('--accent', preset.color);
+    document.documentElement.style.setProperty('--accent-hover', preset.hover);
+    if (accentColorSelect) accentColorSelect.value = state.accentColor;
+};
+
 const handleThemeToggle = async () => {
     state.theme = state.theme === 'light' ? 'dark' : 'light';
     applyTheme();
+    applyAccentColor();
     await storage.set({ theme: state.theme });
+};
+
+const handleAccentColorChange = async () => {
+    if (!accentColorSelect) return;
+    state.accentColor = accentColorSelect.value;
+    applyAccentColor();
+    await storage.set({ accentColor: state.accentColor });
 };
 
 const updateDelayUI = () => {
@@ -587,6 +613,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     await loadData();
     await loadUIState();
     applyTheme();
+    applyAccentColor();
     if (chainDelayInput) {
         chainDelayInput.value = state.chainDelay;
         updateDelayUI();
@@ -629,6 +656,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         chainDelayInput.addEventListener('change', handleDelayChange);
     }
     if (showTagsFilterInput) showTagsFilterInput.addEventListener('change', handleShowTagsFilterChange);
+    if (accentColorSelect) accentColorSelect.addEventListener('change', handleAccentColorChange);
     if (quickThemeToggleBtn) quickThemeToggleBtn.addEventListener('click', handleThemeToggle);
     document.addEventListener('keydown', (e) => {
         if (e.altKey && e.key.toLowerCase() === 'l') {
