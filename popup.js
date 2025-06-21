@@ -444,7 +444,21 @@ const handleVariableSubmit = (e) => {
     state.pendingExecution = null;
     handleNavClick(type === 'prompt' ? 'prompts' : 'chains');
 };
-const executeInContentScript = (d) => { chrome.tabs.query({ active: true, currentWindow: true }, (t) => { const c = t.find(t => t.url && (t.url.startsWith("https://chat.openai.com") || t.url.startsWith("https://chatgpt.com"))); if (c) { chrome.scripting.executeScript({ target: { tabId: c.id }, func: (d) => document.dispatchEvent(new CustomEvent('run-from-popup', { detail: d })), args: [d] }); window.close(); } else { alert('Bitte öffne zuerst einen Tab mit ChatGPT.'); } }); };
+const executeInContentScript = (d) => {
+    chrome.tabs.query({ lastFocusedWindow: true }, (tabs) => {
+        const c = tabs.find(t => t.url && (t.url.startsWith('https://chat.openai.com') || t.url.startsWith('https://chatgpt.com')));
+        if (c) {
+            chrome.scripting.executeScript({
+                target: { tabId: c.id },
+                func: (d) => document.dispatchEvent(new CustomEvent('run-from-popup', { detail: d })),
+                args: [d]
+            });
+            window.close();
+        } else {
+            alert('Bitte öffne zuerst einen Tab mit ChatGPT.');
+        }
+    });
+};
 const handleDragStart = (e) => { const h = e.target.closest('.drag-handle'); if (!h) { e.preventDefault(); return; } const t = h.closest('.chain-prompt-item'); if (!t) return; draggedItemIndex = parseInt(t.dataset.index); setTimeout(() => t.classList.add('dragging'), 0); };
 const handleDragEnd = (e) => { document.querySelectorAll('.chain-prompt-item.dragging').forEach(el => el.classList.remove('dragging')); draggedItemIndex = null; };
 const handleDragOver = (e) => { e.preventDefault(); const o = e.target.closest('.chain-prompt-item'); document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over')); if (o) o.classList.add('drag-over'); };
