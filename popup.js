@@ -85,6 +85,29 @@ const queryElements = () => {
 
 // --- DATA HELPERS & RENDERERS ---
 const storage = { get: (k) => new Promise(r => chrome.storage.local.get(k, r)), set: (i) => new Promise(r => chrome.storage.local.set(i, r)) };
+const sessionStore = {
+    get: (k) => new Promise(r => {
+        if (chrome.storage.session) chrome.storage.session.get(k, r); else r({});
+    }),
+    set: (i) => new Promise(r => {
+        if (chrome.storage.session) chrome.storage.session.set(i, r); else r();
+    })
+};
+
+const loadUIState = async () => {
+    const d = await sessionStore.get(['currentView', 'searchTerm', 'showOnlyFavorites', 'activeTags']);
+    if (d.currentView) state.currentView = d.currentView;
+    searchTerm = d.searchTerm || '';
+    showOnlyFavorites = !!d.showOnlyFavorites;
+    activeTags = Array.isArray(d.activeTags) ? d.activeTags : [];
+};
+
+const saveUIState = () => sessionStore.set({
+    currentView: state.currentView,
+    searchTerm,
+    showOnlyFavorites,
+    activeTags
+});
 const loadData = async () => {
     const d = await storage.get(['prompts', 'chains', 'theme', 'chainDelay', 'showTagsFilter']);
     state.prompts = (d.prompts || []).map(p => ({ ...p, tags: Array.isArray(p.tags) ? p.tags : [] }));
@@ -248,8 +271,8 @@ const autoResizeTextarea = (t) => {
     t.style.height = `${newHeight}px`;
 };
 const extractVariables = (t) => { const r = /{{\s*([a-zA-Z0-9_]+)\s*}}/g; const m = t.match(r) || []; return Array.from(new Set(m.map(v => v.replace(/[{}]/g, '').trim()))); };
-const handleSearchInput = () => { searchTerm = searchBox.value; render(); };
-const handleFavoritesToggle = () => { showOnlyFavorites = !showOnlyFavorites; render(); };
+const handleSearchInput = () => { searchTerm = searchBox.value; saveUIState(); render(); };
+const handleFavoritesToggle = () => { showOnlyFavorites = !showOnlyFavorites; saveUIState(); render(); };
 const handleTagFilterClick = (e) => {
     const chip = e.target.closest('.tag-chip[data-tag]');
     if (!chip) return;
@@ -259,6 +282,7 @@ const handleTagFilterClick = (e) => {
     } else {
         activeTags.push(t);
     }
+    saveUIState();
     render();
 };
 const handleNavClick = (v) => {
@@ -267,6 +291,7 @@ const handleNavClick = (v) => {
     showChainsBtn.classList.toggle('active', v === 'chains');
     showSettingsBtn.classList.toggle('active', v === 'settings');
     render();
+    saveUIState();
 };
 const handleAddNew = () => {
     if (state.currentView === 'prompts') {
@@ -502,6 +527,7 @@ const handleShowTagsFilterChange = async () => {
 document.addEventListener('DOMContentLoaded', async () => {
     queryElements();
     await loadData();
+    await loadUIState();
     applyTheme();
     if (chainDelayInput) {
         chainDelayInput.value = state.chainDelay;
@@ -510,7 +536,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (showTagsFilterInput) showTagsFilterInput.checked = state.showTagsFilter;
     if (exportBtn) exportBtn.querySelector('.btn-icon').innerHTML = ICON_DOWNLOAD;
     if (importBtn) importBtn.querySelector('.btn-icon').innerHTML = ICON_UPLOAD;
+    if (searchBox) searchBox.value = searchTerm;
+    if (favoritesToggleBtn && showOnlyFavorites) favoritesToggleBtn.classList.add('active');
     render();
+    saveUIState();
 
     showPromptsBtn.addEventListener('click', () => handleNavClick('prompts'));
     showChainsBtn.addEventListener('click', () => handleNavClick('chains'));

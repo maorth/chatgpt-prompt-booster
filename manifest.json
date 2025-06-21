@@ -6,11 +6,14 @@
   "permissions": [
     "storage",
     "scripting",
-    "activeTab"
+    "activeTab",
+    "sidePanel"
   ],
   "action": {
-    "default_popup": "popup.html",
     "default_title": "Prompt Manager"
+  },
+  "side_panel": {
+    "default_path": "sidepanel.html"
   },
   "icons": {
     "16": "icons/icon16.png",
