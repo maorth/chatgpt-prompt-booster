@@ -32,6 +32,8 @@ let state = {
     showTagsFilter: true
 };
 let draggedItemIndex = null;
+let draggedCardId = null;
+let draggedCardOriginalIndex = null;
 let searchTerm = '';
 let showOnlyFavorites = false;
 let activeTags = [];
@@ -202,6 +204,8 @@ const renderPrompts = () => {
     const sorted = list.sort((a, b) => (b.isFavorite || 0) - (a.isFavorite || 0));
     sorted.forEach(p => {
         const d = document.createElement('div');
+        d.dataset.id = p.id;
+        d.setAttribute('draggable', 'true');
         const matchTitle = p.title.toLowerCase().includes(term);
         const matchDesc = (p.description || '').toLowerCase().includes(term);
         const matchTag = (p.tags || []).some(t => t.toLowerCase().includes(term));
@@ -235,6 +239,8 @@ const renderChains = () => {
     const sorted = list.sort((a, b) => (b.isFavorite || 0) - (a.isFavorite || 0));
     sorted.forEach(c => {
         const d = document.createElement('div');
+        d.dataset.id = c.id;
+        d.setAttribute('draggable', 'true');
         const matchTitle = c.name.toLowerCase().includes(term);
         const matchTag = (c.tags || []).some(t => t.toLowerCase().includes(term));
         const shouldExpand = term && !matchTitle && matchTag;
@@ -522,6 +528,40 @@ const handleDragEnd = (e) => { document.querySelectorAll('.chain-prompt-item.dra
 const handleDragOver = (e) => { e.preventDefault(); const o = e.target.closest('.chain-prompt-item'); document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over')); if (o) o.classList.add('drag-over'); };
 const handleDrop = (e) => { e.preventDefault(); document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over')); const d = e.target.closest('.chain-prompt-item'); if (d === null || draggedItemIndex === null || !state.chainBeingEdited) return; const i = parseInt(d.dataset.index); if (draggedItemIndex === i) return; const [r] = state.chainBeingEdited.prompts.splice(draggedItemIndex, 1); state.chainBeingEdited.prompts.splice(i, 0, r); renderChainPromptInputs(); };
 
+const handleCardDragStart = (e) => {
+    const card = e.target.closest('.item-card');
+    if (!card || e.target.closest('button')) { e.preventDefault(); return; }
+    draggedCardId = card.dataset.id;
+    const arr = state[state.currentView === 'prompts' ? 'prompts' : 'chains'];
+    draggedCardOriginalIndex = arr.findIndex(i => i.id === draggedCardId);
+    setTimeout(() => card.classList.add('dragging'), 0);
+    if (e.dataTransfer && e.dataTransfer.setDragImage) {
+        const img = document.createElement('div');
+        img.style.position = 'absolute';
+        img.style.top = '-9999px';
+        document.body.appendChild(img);
+        e.dataTransfer.setDragImage(img, 0, 0);
+        setTimeout(() => document.body.removeChild(img), 0);
+    }
+};
+const handleCardDragEnd = () => { document.querySelectorAll('.item-card.dragging').forEach(el => el.classList.remove('dragging')); document.querySelectorAll('.item-card.drag-over').forEach(el => el.classList.remove('drag-over')); draggedCardId = null; draggedCardOriginalIndex = null; };
+const handleCardDragOver = (e) => { e.preventDefault(); const c = e.target.closest('.item-card'); document.querySelectorAll('.item-card.drag-over').forEach(el => el.classList.remove('drag-over')); if (c && c.dataset.id !== draggedCardId) c.classList.add('drag-over'); };
+const handleCardDragLeave = (e) => { const c = e.target.closest('.item-card'); if (c) c.classList.remove('drag-over'); };
+const handleCardDrop = async (e) => {
+    e.preventDefault();
+    const target = e.target.closest('.item-card');
+    document.querySelectorAll('.item-card.drag-over').forEach(el => el.classList.remove('drag-over'));
+    if (!target || draggedCardId === null) return;
+    const listName = state.currentView === 'prompts' ? 'prompts' : 'chains';
+    const arr = state[listName];
+    const targetIndex = arr.findIndex(i => i.id === target.dataset.id);
+    if (targetIndex === -1 || draggedCardOriginalIndex === null || draggedCardOriginalIndex === targetIndex) return;
+    const [moved] = arr.splice(draggedCardOriginalIndex, 1);
+    arr.splice(targetIndex, 0, moved);
+    await storage.set({ [listName]: arr });
+    render();
+};
+
 const handleExport = () => {
     const data = { prompts: state.prompts, chains: state.chains };
     const date = new Date().toISOString().slice(0, 10);
@@ -702,6 +742,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     chainPromptsContainer.addEventListener('dragend', handleDragEnd);
     chainPromptsContainer.addEventListener('dragover', handleDragOver);
     chainPromptsContainer.addEventListener('drop', handleDrop);
+    contentList.addEventListener('dragstart', handleCardDragStart);
+    contentList.addEventListener('dragend', handleCardDragEnd);
+    contentList.addEventListener('dragover', handleCardDragOver);
+    contentList.addEventListener('dragleave', handleCardDragLeave);
+    contentList.addEventListener('drop', handleCardDrop);
     exportBtn.addEventListener('click', handleExport);
     importBtn.addEventListener('click', handleImportClick);
     importFileInput.addEventListener('change', handleImportFile);
