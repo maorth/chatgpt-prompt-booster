@@ -7,3 +7,15 @@ chrome.runtime.onInstalled.addListener(() => {
         chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true });
     }
 });
+
+chrome.action.onClicked.addListener(async (tab) => {
+    try {
+        await chrome.sidePanel.setOptions({
+            tabId: tab.id,
+            enabled: true
+        });
+        await chrome.sidePanel.open({ tabId: tab.id });
+    } catch (e) {
+        console.error('Failed to open side panel', e);
+    }
+});
