@@ -4,6 +4,13 @@
     let currentPromptIndex = 0;
     let delaySeconds = 0;
 
+    // Registriere diesen Tab beim Hintergrundskript
+    try {
+        chrome.runtime.sendMessage({ type: 'register-chatgpt-tab' });
+    } catch (e) {
+        console.error('Failed to register ChatGPT tab', e);
+    }
+
     // --- DOM-Helfer ---
     const getSubmitButton = () => document.querySelector('button#composer-submit-button');
     const getInputArea = () => document.querySelector('div#prompt-textarea');

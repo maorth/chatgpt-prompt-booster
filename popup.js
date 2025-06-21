@@ -445,12 +445,12 @@ const handleVariableSubmit = (e) => {
     handleNavClick(type === 'prompt' ? 'prompts' : 'chains');
 };
 const executeInContentScript = (d) => {
-    chrome.tabs.query({ url: ['https://chat.openai.com/*', 'https://chatgpt.com/*'] }, (tabs) => {
-        const c = tabs[0];
-
-        if (c) {
+    chrome.runtime.sendMessage({ type: 'get-chatgpt-tab' }, (res) => {
+        const id = res && res.tabId;
+        if (typeof id === 'number') {
             chrome.scripting.executeScript({
-                target: { tabId: c.id },
+                target: { tabId: id },
+
                 func: (d) => document.dispatchEvent(new CustomEvent('run-from-popup', { detail: d })),
                 args: [d]
             });

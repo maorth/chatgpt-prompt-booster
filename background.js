@@ -19,3 +19,19 @@ chrome.action.onClicked.addListener(async (tab) => {
         console.error('Failed to open side panel', e);
     }
 });
+
+let chatgptTabId = null;
+
+chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+    if (msg && msg.type === 'register-chatgpt-tab' && sender.tab) {
+        chatgptTabId = sender.tab.id;
+    } else if (msg && msg.type === 'get-chatgpt-tab') {
+        sendResponse({ tabId: chatgptTabId });
+    }
+});
+
+chrome.tabs.onRemoved.addListener((tabId) => {
+    if (tabId === chatgptTabId) {
+        chatgptTabId = null;
+    }
+});
