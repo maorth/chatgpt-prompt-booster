@@ -447,6 +447,7 @@ const handleVariableSubmit = (e) => {
 const executeInContentScript = (d) => {
     chrome.tabs.query({ url: ['https://chat.openai.com/*', 'https://chatgpt.com/*'] }, (tabs) => {
         const c = tabs[0];
+
         if (c) {
             chrome.scripting.executeScript({
                 target: { tabId: c.id },
