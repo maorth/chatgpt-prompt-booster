@@ -445,8 +445,8 @@ const handleVariableSubmit = (e) => {
     handleNavClick(type === 'prompt' ? 'prompts' : 'chains');
 };
 const executeInContentScript = (d) => {
-    chrome.tabs.query({ active: true, lastFocusedWindow: true }, (t) => {
-        const c = t.find(t => t.url && (t.url.startsWith("https://chat.openai.com") || t.url.startsWith("https://chatgpt.com")));
+    chrome.tabs.query({ lastFocusedWindow: true }, (tabs) => {
+        const c = tabs.find(t => t.url && (t.url.startsWith('https://chat.openai.com') || t.url.startsWith('https://chatgpt.com')));
         if (c) {
             chrome.scripting.executeScript({
                 target: { tabId: c.id },
