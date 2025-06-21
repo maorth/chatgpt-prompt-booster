@@ -445,10 +445,25 @@ const handleVariableSubmit = (e) => {
     handleNavClick(type === 'prompt' ? 'prompts' : 'chains');
 };
 const executeInContentScript = (d) => {
-    chrome.runtime.sendMessage({ type: 'get-chatgpt-tab' }, (res) => {
-        const id = res && res.tabId;
-        if (typeof id === 'number') {
-            chrome.tabs.sendMessage(id, { type: 'run-from-popup', detail: d });
+    const queryOptions = {
+        url: [
+            "https://chat.openai.com/*",
+            "https://chatgpt.com/*"
+        ]
+    };
+
+    console.log("DEBUG: Querying tabs with options:", queryOptions);
+
+    chrome.tabs.query(queryOptions, (tabs) => {
+        console.log("DEBUG: Raw tabs array from query:", tabs);
+        console.log("DEBUG: URLs of found tabs:", tabs.map(t => t.url));
+        console.log("DEBUG: Active states of found tabs:", tabs.map(t => t.active));
+
+        const chatGptTab = tabs.find(tab => tab.active) || tabs[0];
+        console.log("DEBUG: Selected chatGptTab:", chatGptTab);
+
+        if (chatGptTab && typeof chatGptTab.id === 'number') {
+            chrome.tabs.sendMessage(chatGptTab.id, { type: 'run-from-popup', detail: d });
         } else {
             alert('Bitte öffne zuerst einen Tab mit ChatGPT.');
         }
