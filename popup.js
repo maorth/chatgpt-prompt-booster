@@ -448,12 +448,8 @@ const executeInContentScript = (d) => {
     chrome.runtime.sendMessage({ type: 'get-chatgpt-tab' }, (res) => {
         const id = res && res.tabId;
         if (typeof id === 'number') {
-            chrome.scripting.executeScript({
-                target: { tabId: id },
+            chrome.tabs.sendMessage(id, { type: 'run-from-popup', detail: d });
 
-                func: (d) => document.dispatchEvent(new CustomEvent('run-from-popup', { detail: d })),
-                args: [d]
-            });
             window.close();
         } else {
             alert('Bitte öffne zuerst einen Tab mit ChatGPT.');
