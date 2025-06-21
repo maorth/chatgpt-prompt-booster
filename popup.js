@@ -90,7 +90,8 @@ const loadData = async () => {
     state.prompts = (d.prompts || []).map(p => ({ ...p, tags: Array.isArray(p.tags) ? p.tags : [] }));
     state.chains = (d.chains || []).map(c => ({ ...c, tags: Array.isArray(c.tags) ? c.tags : [] }));
     state.theme = d.theme || 'dark';
-    state.chainDelay = typeof d.chainDelay === 'number' && d.chainDelay >= 0 ? d.chainDelay : 0;
+    const storedDelay = typeof d.chainDelay === 'number' && d.chainDelay >= 0 ? d.chainDelay : 0;
+    state.chainDelay = storedDelay > 10 ? 10 : storedDelay;
     state.showTagsFilter = d.showTagsFilter !== false;
 };
 
@@ -474,7 +475,7 @@ const updateDelayUI = () => {
     if (!chainDelayInput) return;
     const val = parseInt(chainDelayInput.value, 10) || 0;
     if (chainDelayDisplay) chainDelayDisplay.textContent = `${val} s`;
-    const max = parseInt(chainDelayInput.max, 10) || 60;
+    const max = parseInt(chainDelayInput.max, 10) || 10;
     const percentage = (val / max) * 100;
     chainDelayInput.style.background = `linear-gradient(to right, var(--accent) 0%, var(--accent) ${percentage}%, var(--bg-tertiary) ${percentage}%, var(--bg-tertiary) 100%)`;
 };
@@ -483,7 +484,7 @@ const handleDelayChange = async () => {
     if (!chainDelayInput) return;
     let val = parseInt(chainDelayInput.value, 10);
     if (isNaN(val) || val < 0) val = 0;
-    if (val > 60) val = 60;
+    if (val > 10) val = 10;
     chainDelayInput.value = val;
     state.chainDelay = val;
     updateDelayUI();
