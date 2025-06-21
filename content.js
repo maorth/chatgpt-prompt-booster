@@ -245,6 +245,34 @@
         });
     };
 
+    const getLastAssistantMessage = () => {
+        const msgs = document.querySelectorAll('div[data-message-author-role="assistant"]');
+        const last = msgs[msgs.length - 1];
+        return last ? last.innerText || '' : '';
+    };
+
+    const executeFlowStep = ({ text, step, total, delay }) => {
+        delaySeconds = typeof delay === 'number' && delay >= 0 ? delay : 0;
+        updateStatusOverlay(step, total);
+        submitPrompt(text, () => {
+            const output = getLastAssistantMessage();
+            const finish = () => {
+                isExecuting = false;
+                if (step === total) {
+                    showSuccessOverlay();
+                    hideStatusOverlay(4000);
+                }
+                chrome.runtime.sendMessage({ type: 'flow-step-result', step, output });
+            };
+            if (step < total && delaySeconds > 0) {
+                showCountdownTimer(delaySeconds);
+                setTimeout(() => { hideCountdownTimer(); finish(); }, delaySeconds * 1000);
+            } else {
+                finish();
+            }
+        });
+    };
+
     // --- Zentraler Event-Listener ---
     const handleRunRequest = (d) => {
         if (isExecuting) {
@@ -253,7 +281,7 @@
         }
 
         isExecuting = true;
-        const { type, text, chain, delay } = d;
+        const { type, text, chain, delay, step, total } = d;
         delaySeconds = typeof delay === 'number' && delay >= 0 ? delay : 0;
 
         if (type === 'execute-prompt') {
@@ -262,6 +290,8 @@
             currentChain = chain.prompts;
             currentPromptIndex = 0;
             runNextChainStep();
+        } else if (type === 'execute-flow-step') {
+            executeFlowStep({ text, step, total, delay });
         } else {
             isExecuting = false;
         }
