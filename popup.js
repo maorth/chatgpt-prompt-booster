@@ -449,6 +449,7 @@ const executeInContentScript = (d) => {
         const id = res && res.tabId;
         if (typeof id === 'number') {
             chrome.tabs.sendMessage(id, { type: 'run-from-popup', detail: d });
+
             window.close();
         } else {
             alert('Bitte öffne zuerst einen Tab mit ChatGPT.');
