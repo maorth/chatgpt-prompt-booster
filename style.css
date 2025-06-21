@@ -358,6 +358,7 @@ input[type="range"]:focus-visible::-moz-range-thumb {
 .drag-handle { display: flex; align-items: center; justify-content: center; color: var(--text-secondary); cursor: grab; padding: 0.5rem; touch-action: none; }
 .drag-handle:hover { color: var(--text-primary); }
 .chain-prompt-item.dragging { opacity: 0.4; }
+.item-card.dragging { opacity: 0.4; }
 .drag-over { border-color: var(--accent); background-color: #2c2c31; }
 
 .settings-card {
