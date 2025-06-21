@@ -31,7 +31,8 @@ let state = {
     customAccentColor: '',
     chainDelay: 0,
     flowSeparator: '~',
-    showTagsFilter: true
+    showTagsFilter: true,
+    isExecuting: false
 };
 let draggedItemIndex = null;
 let draggedCardId = null;
@@ -427,10 +428,15 @@ const handleListClick = async (e) => {
             return;
         }
         if (action === 'run-prompt') {
+            if (state.isExecuting) {
+                alert('Es wird bereits ein Prompt oder eine Chain/Flow ausgeführt. Bitte warte, bis der aktuelle Vorgang abgeschlossen ist.');
+                return;
+            }
             const p = state.prompts.find(p => p.id === id);
             if (!p) return;
             const v = extractVariables(p.text);
             if (v.length === 0) {
+                state.isExecuting = true;
                 executeInContentScript({ type: 'execute-prompt', text: p.text });
             } else {
                 state.pendingExecution = { type: 'prompt', data: p };
@@ -439,11 +445,16 @@ const handleListClick = async (e) => {
                 render();
             }
         } else if (action === 'run-chain') {
+            if (state.isExecuting) {
+                alert('Es wird bereits ein Prompt oder eine Chain/Flow ausgeführt. Bitte warte, bis der aktuelle Vorgang abgeschlossen ist.');
+                return;
+            }
             const c = state.chains.find(c => c.id === id);
             if (!c) return;
             const a = c.prompts.map(p => p.text).join(' ');
             const v = extractVariables(a);
             if (v.length === 0) {
+                state.isExecuting = true;
                 executeInContentScript({ type: 'execute-chain', chain: c, delay: state.chainDelay });
             } else {
                 state.pendingExecution = { type: 'chain', data: c };
@@ -475,11 +486,16 @@ const handleListClick = async (e) => {
             renderChainPromptInputs();
             render();
         } else if (action === 'run-flow') {
+            if (state.isExecuting) {
+                alert('Es wird bereits ein Prompt oder eine Chain/Flow ausgeführt. Bitte warte, bis der aktuelle Vorgang abgeschlossen ist.');
+                return;
+            }
             const f = state.flows.find(fl => fl.id === id);
             if (!f) return;
             const steps = parseFlowText(f.text);
             const vars = extractVariables(steps.join(' ')).filter(v => !/^OUTPUT_STEP_\d+$/.test(v));
             if (vars.length === 0) {
+                state.isExecuting = true;
                 runFlow(f, {}, steps);
             } else {
                 state.pendingExecution = { type: 'flow', data: f, steps };
@@ -561,6 +577,11 @@ const handleRemovePromptFromChain = (e) => { const t = e.target.closest('button[
 const handleVariableSubmit = (e) => {
     e.preventDefault();
     if (!state.pendingExecution) return;
+    if (state.isExecuting) {
+        alert('Es wird bereits ein Prompt oder eine Chain/Flow ausgeführt. Bitte warte, bis der aktuelle Vorgang abgeschlossen ist.');
+        return;
+    }
+    state.isExecuting = true;
     const v = {};
     variableFieldsContainer.querySelectorAll('.variable-input').forEach(i => {
         v[i.name] = i.value;
@@ -635,13 +656,18 @@ const executeInContentScript = (d) => {
             }, (results) => {
                 if (chrome.runtime.lastError) {
                     console.error("DEBUG popup.js: Error in executeScript:", chrome.runtime.lastError.message);
+                    state.isExecuting = false;
                 } else {
                     console.log("DEBUG popup.js: chrome.scripting.executeScript completed. Results:", results);
+                    if (d.type === 'execute-prompt') {
+                        state.isExecuting = false;
+                    }
                 }
             });
         } else {
             console.log("DEBUG: No valid ChatGPT tab found. Alerting user.");
             alert('Bitte öffne zuerst einen Tab mit ChatGPT.');
+            state.isExecuting = false;
         }
     };
 
@@ -943,4 +969,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             handleThemeToggle();
         }
     });
+});
+
+chrome.runtime.onMessage.addListener((msg) => {
+    if (msg && (msg.type === 'execution-complete' || msg.type === 'execution-error')) {
+        state.isExecuting = false;
+    }
 });

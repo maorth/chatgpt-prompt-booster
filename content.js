@@ -45,6 +45,7 @@
         if (!inputArea) {
             alert('Fehler: Eingabebereich nicht gefunden.');
             isExecuting = false;
+            try { chrome.runtime.sendMessage({ type: 'execution-error' }); } catch(e) {}
             if(onFinishCallback) onFinishCallback();
             return;
         }
@@ -60,6 +61,7 @@
             } else {
                 alert('Fehler: Senden-Button konnte nach Texteingabe nicht gefunden werden.');
                 isExecuting = false;
+                try { chrome.runtime.sendMessage({ type: 'execution-error' }); } catch(e) {}
                 if(onFinishCallback) onFinishCallback();
             }
         }, 500);
@@ -67,7 +69,10 @@
 
     // --- Logik für einzelne Prompts ---
     const executeSinglePrompt = (text) => {
-        submitPrompt(text, () => { isExecuting = false; });
+        submitPrompt(text, () => {
+            isExecuting = false;
+            try { chrome.runtime.sendMessage({ type: 'execution-complete' }); } catch(e) {}
+        });
     };
 
     // --- Logik für Ketten ---
@@ -225,6 +230,7 @@
             updateStatusOverlay();
             showSuccessOverlay();
             hideStatusOverlay(4000);
+            try { chrome.runtime.sendMessage({ type: 'execution-complete' }); } catch(e) {}
             return;
         }
         updateStatusOverlay(currentPromptIndex + 1, currentChain.length);
@@ -239,6 +245,7 @@
                 updateStatusOverlay();
                 showSuccessOverlay();
                 hideStatusOverlay(4000);
+                try { chrome.runtime.sendMessage({ type: 'execution-complete' }); } catch(e) {}
             } else {
                 waitBeforeNext(runNextChainStep);
             }
@@ -261,6 +268,7 @@
                 if (step === total) {
                     showSuccessOverlay();
                     hideStatusOverlay(4000);
+                    try { chrome.runtime.sendMessage({ type: 'execution-complete' }); } catch(e) {}
                 }
                 chrome.runtime.sendMessage({ type: 'flow-step-result', step, output });
             };
