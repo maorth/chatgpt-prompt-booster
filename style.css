@@ -27,7 +27,7 @@
     --favorite: #facc15; /* gelb/gold für Favoriten */
     --border-color: #d4d4d8; /* zinc-300 */
     --btn-secondary-hover: #52525b; /* zinc-600 */
-    --slider-track: #bbbbbb;
+    --slider-track: #e0e0e0;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -359,6 +359,14 @@ input[type="range"]::-moz-range-thumb:active {
     padding: 1.5rem;
     margin-bottom: 2rem;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+    transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+html.light-theme .settings-card {
+    background-color: #f5f5f5;
+    color: var(--text-primary);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 #settings-container .settings-card h2 {
     margin-bottom: 1rem;
