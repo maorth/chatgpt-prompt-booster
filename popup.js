@@ -456,15 +456,36 @@ const executeInContentScript = (d) => {
 
     chrome.tabs.query(queryOptions, (tabs) => {
         console.log("DEBUG: Raw tabs array from query:", tabs);
-        console.log("DEBUG: URLs of found tabs:", tabs.map(t => t.url));
-        console.log("DEBUG: Active states of found tabs:", tabs.map(t => t.active));
+        // Safer logging for URLs and active states
+        console.log("DEBUG: URLs of found tabs:", tabs.map(t => t && t.url).filter(Boolean));
+        console.log("DEBUG: Active states of found tabs:", tabs.map(t => t && t.active).filter(a => a !== undefined));
 
-        const chatGptTab = tabs.find(tab => tab.active) || tabs[0];
+        const chatGptTab = tabs.find(tab => tab && tab.active) || tabs[0];
         console.log("DEBUG: Selected chatGptTab:", chatGptTab);
 
         if (chatGptTab && typeof chatGptTab.id === 'number') {
-            chrome.tabs.sendMessage(chatGptTab.id, { type: 'run-from-popup', detail: d });
+            console.log("DEBUG: Tab found, attempting to execute script in Tab ID:", chatGptTab.id);
+
+            chrome.scripting.executeScript({
+                target: { tabId: chatGptTab.id },
+                // This function will run directly in the context of the ChatGPT tab
+                func: (promptDataToInject) => {
+                    // CRITICAL: Dispatch the CustomEvent that content.js is listening for
+                    document.dispatchEvent(
+                        new CustomEvent('run-from-popup', { detail: promptDataToInject })
+                    );
+                    console.log("DEBUG injected func: CustomEvent 'run-from-popup' dispatched with detail:", promptDataToInject);
+                },
+                args: [d]
+            }, (results) => {
+                if (chrome.runtime.lastError) {
+                    console.error("DEBUG popup.js: Error in executeScript:", chrome.runtime.lastError.message);
+                } else {
+                    console.log("DEBUG popup.js: chrome.scripting.executeScript completed. Results:", results);
+                }
+            });
         } else {
+            console.log("DEBUG: No valid ChatGPT tab found. Alerting user.");
             alert('Bitte öffne zuerst einen Tab mit ChatGPT.');
         }
     });
