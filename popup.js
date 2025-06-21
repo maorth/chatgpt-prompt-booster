@@ -445,32 +445,15 @@ const handleVariableSubmit = (e) => {
     handleNavClick(type === 'prompt' ? 'prompts' : 'chains');
 };
 const executeInContentScript = (d) => {
-    const queryOptions = {
-        url: [
-            "https://chat.openai.com/*",
-            "https://chatgpt.com/*"
-        ]
-    };
+    const isChatGptUrl = (url) => /^https:\/\/(chat\.openai\.com|chatgpt\.com)\//.test(url || '');
 
-    console.log("DEBUG: Querying tabs with options:", queryOptions);
-
-    chrome.tabs.query(queryOptions, (tabs) => {
-        console.log("DEBUG: Raw tabs array from query:", tabs);
-        // Safer logging for URLs and active states
-        console.log("DEBUG: URLs of found tabs:", tabs.map(t => t && t.url).filter(Boolean));
-        console.log("DEBUG: Active states of found tabs:", tabs.map(t => t && t.active).filter(a => a !== undefined));
-
-        const chatGptTab = tabs.find(tab => tab && tab.active) || tabs[0];
-        console.log("DEBUG: Selected chatGptTab:", chatGptTab);
-
-        if (chatGptTab && typeof chatGptTab.id === 'number') {
-            console.log("DEBUG: Tab found, attempting to execute script in Tab ID:", chatGptTab.id);
+    const injectIntoTab = (tab) => {
+        if (tab && typeof tab.id === 'number') {
+            console.log("DEBUG: Tab found, attempting to execute script in Tab ID:", tab.id);
 
             chrome.scripting.executeScript({
-                target: { tabId: chatGptTab.id },
-                // This function will run directly in the context of the ChatGPT tab
+                target: { tabId: tab.id },
                 func: (promptDataToInject) => {
-                    // CRITICAL: Dispatch the CustomEvent that content.js is listening for
                     document.dispatchEvent(
                         new CustomEvent('run-from-popup', { detail: promptDataToInject })
                     );
@@ -487,6 +470,35 @@ const executeInContentScript = (d) => {
         } else {
             console.log("DEBUG: No valid ChatGPT tab found. Alerting user.");
             alert('Bitte öffne zuerst einen Tab mit ChatGPT.');
+        }
+    };
+
+    chrome.tabs.query({ active: true, currentWindow: true }, (activeTabs) => {
+        const activeTab = activeTabs && activeTabs[0];
+        console.log("DEBUG: Active tab from query:", activeTab);
+
+        if (activeTab && isChatGptUrl(activeTab.url)) {
+            injectIntoTab(activeTab);
+        } else {
+            const queryOptions = {
+                url: [
+                    "https://chat.openai.com/*",
+                    "https://chatgpt.com/*"
+                ]
+            };
+
+            console.log("DEBUG: Fallback querying tabs with options:", queryOptions);
+
+            chrome.tabs.query(queryOptions, (tabs) => {
+                console.log("DEBUG: Raw tabs array from query:", tabs);
+                console.log("DEBUG: URLs of found tabs:", tabs.map(t => t && t.url).filter(Boolean));
+                console.log("DEBUG: Active states of found tabs:", tabs.map(t => t && t.active).filter(a => a !== undefined));
+
+                const chatGptTab = tabs.find(tab => tab && tab.active) || tabs[0];
+                console.log("DEBUG: Selected chatGptTab from fallback:", chatGptTab);
+
+                injectIntoTab(chatGptTab);
+            });
         }
     });
 };
