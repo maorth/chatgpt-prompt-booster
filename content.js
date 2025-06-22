@@ -12,8 +12,22 @@
     }
 
     // --- DOM-Helfer ---
-    const getSubmitButton = () => document.querySelector('button#composer-submit-button');
-    const getInputArea = () => document.querySelector('div#prompt-textarea');
+    const SUBMIT_BUTTON_SELECTORS = [
+        'button[data-testid="send-button"]',
+        'button[aria-label="Send message"]',
+        'textarea[tabindex="0"] + button',
+        'button#composer-submit-button'
+    ];
+
+    const getSubmitButton = () => {
+        for (const sel of SUBMIT_BUTTON_SELECTORS) {
+            const btn = document.querySelector(sel);
+            if (btn) return btn;
+        }
+        return null;
+    };
+    // Use the stable id selector for the chat input textarea
+    const getInputArea = () => document.querySelector('#prompt-textarea');
     // Der datenbasierte Selektor für den Stop-Button
     const getStopButton = () => document.querySelector('button[data-testid="stop-button"]');
 
@@ -43,6 +57,7 @@
     const submitPrompt = (text, onFinishCallback) => {
         const inputArea = getInputArea();
         if (!inputArea) {
+            console.error("DEBUG content.js: ChatGPT input textarea not found!");
             alert('Fehler: Eingabebereich nicht gefunden.');
             isExecuting = false;
             try { chrome.runtime.sendMessage({ type: 'execution-error' }); } catch(e) {}
@@ -50,21 +65,51 @@
             return;
         }
         
-        inputArea.innerText = text;
+        console.log("DEBUG content.js: Original promptText:", text);
+        console.log("DEBUG content.js: Textarea found:", inputArea);
+
+        inputArea.focus();
+
+        inputArea.value = text;
+        console.log("DEBUG content.js: Textarea value set. Current value:", inputArea.value);
+
+        console.log("DEBUG content.js: Dispatching input event.");
         inputArea.dispatchEvent(new Event('input', { bubbles: true }));
 
-        setTimeout(() => {
+        console.log("DEBUG content.js: Dispatching change event.");
+        inputArea.dispatchEvent(new Event('change', { bubbles: true }));
+
+        console.log("DEBUG content.js: Dispatching keydown event for Enter.");
+        inputArea.dispatchEvent(new KeyboardEvent('keydown', {
+            key: 'Enter',
+            code: 'Enter',
+            keyCode: 13,
+            which: 13,
+            bubbles: true,
+            cancelable: true
+        }));
+
+        const findAndClickSendButton = (attempts = 0) => {
+            const MAX_ATTEMPTS = 20;
+            const RETRY_DELAY_MS = 100;
+
             const submitButton = getSubmitButton();
             if (submitButton && !submitButton.disabled) {
+                console.log("DEBUG content.js: Send button FOUND and enabled. Clicking now!", submitButton);
                 submitButton.click();
                 waitForCompletion(onFinishCallback);
+            } else if (attempts < MAX_ATTEMPTS) {
+                console.log(`DEBUG content.js: Send button not yet found or disabled. Retrying... (Attempt ${attempts + 1}/${MAX_ATTEMPTS})`);
+                setTimeout(() => findAndClickSendButton(attempts + 1), RETRY_DELAY_MS);
             } else {
+                console.error("DEBUG content.js: Send button NOT found or enabled after multiple attempts.");
                 alert('Fehler: Senden-Button konnte nach Texteingabe nicht gefunden werden.');
                 isExecuting = false;
                 try { chrome.runtime.sendMessage({ type: 'execution-error' }); } catch(e) {}
                 if(onFinishCallback) onFinishCallback();
             }
-        }, 500);
+        };
+        findAndClickSendButton();
     };
 
     // --- Logik für einzelne Prompts ---
