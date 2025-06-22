@@ -14,9 +14,8 @@
     // --- DOM-Helfer ---
     const SUBMIT_BUTTON_SELECTORS = [
         'button[data-testid="send-button"]',
-        'button[aria-label="Send message"]',
-        'textarea[tabindex="0"] + button',
-        'button#composer-submit-button'
+        'button[aria-label="Send message"]'
+        // Removed outdated selectors
     ];
 
     const getSubmitButton = () => {
@@ -70,24 +69,19 @@
 
         inputArea.focus();
 
-        inputArea.innerText = text;
+        inputArea.innerText = text; // CRITICAL CHANGE: Use innerText for contenteditable div
         console.log("DEBUG content.js: Input field text set. Current value:", inputArea.innerText);
 
-        console.log("DEBUG content.js: Dispatching input event.");
-        inputArea.dispatchEvent(new Event('input', { bubbles: true }));
-
-        console.log("DEBUG content.js: Dispatching change event.");
-        inputArea.dispatchEvent(new Event('change', { bubbles: true }));
-
-        console.log("DEBUG content.js: Dispatching keydown event for Enter.");
-        inputArea.dispatchEvent(new KeyboardEvent('keydown', {
-            key: 'Enter',
-            code: 'Enter',
-            keyCode: 13,
-            which: 13,
+        // Simulate paste event to trigger React state update
+        const dataTransfer = new DataTransfer();
+        dataTransfer.setData('text/plain', text);
+        const pasteEvent = new ClipboardEvent('paste', {
+            clipboardData: dataTransfer,
             bubbles: true,
             cancelable: true
-        }));
+        });
+        inputArea.dispatchEvent(pasteEvent);
+        console.log("DEBUG content.js: Prompt inserted via simulated paste event.");
 
         const findAndClickSendButton = (attempts = 0) => {
             const MAX_ATTEMPTS = 20;
