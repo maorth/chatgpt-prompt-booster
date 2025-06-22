@@ -13,7 +13,8 @@
 
     // --- DOM-Helfer ---
     const getSubmitButton = () => document.querySelector('button#composer-submit-button');
-    const getInputArea = () => document.querySelector('textarea[tabindex="0"]');
+    // Use the stable id selector for the chat input textarea
+    const getInputArea = () => document.querySelector('#prompt-textarea');
     // Der datenbasierte Selektor für den Stop-Button
     const getStopButton = () => document.querySelector('button[data-testid="stop-button"]');
 
@@ -43,6 +44,7 @@
     const submitPrompt = (text, onFinishCallback) => {
         const inputArea = getInputArea();
         if (!inputArea) {
+            console.error("DEBUG content.js: ChatGPT input textarea not found!");
             alert('Fehler: Eingabebereich nicht gefunden.');
             isExecuting = false;
             try { chrome.runtime.sendMessage({ type: 'execution-error' }); } catch(e) {}
