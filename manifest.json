@@ -9,7 +9,7 @@
     "activeTab",
     "sidePanel"
   ],
-  "host_permissions": [ // DIESER ABSCHNITT IST DER SCHLÜSSEL
+  "host_permissions": [
     "https://chat.openai.com/*",
     "https://chatgpt.com/*"
   ],
