@@ -13,7 +13,7 @@
 
     // --- DOM-Helfer ---
     const getSubmitButton = () => document.querySelector('button#composer-submit-button');
-    const getInputArea = () => document.querySelector('div#prompt-textarea');
+    const getInputArea = () => document.querySelector('textarea[tabindex="0"]');
     // Der datenbasierte Selektor für den Stop-Button
     const getStopButton = () => document.querySelector('button[data-testid="stop-button"]');
 
@@ -50,22 +50,29 @@
             return;
         }
         
+        console.log("DEBUG content.js: Original promptText:", text);
+        console.log("DEBUG content.js: Textarea found:", inputArea);
+
         inputArea.focus();
 
-        const dataTransfer = new DataTransfer();
-        dataTransfer.setData('text/plain', text);
+        inputArea.value = text;
+        console.log("DEBUG content.js: Textarea value set. Current value:", inputArea.value);
 
-        const pasteEvent = new ClipboardEvent('paste', {
-            clipboardData: dataTransfer,
-            bubbles: true,
-            cancelable: true
-        });
-
-        inputArea.dispatchEvent(pasteEvent);
-
+        console.log("DEBUG content.js: Dispatching input event.");
         inputArea.dispatchEvent(new Event('input', { bubbles: true }));
 
-        console.log("DEBUG content.js: Prompt inserted via simulated paste event.");
+        console.log("DEBUG content.js: Dispatching change event.");
+        inputArea.dispatchEvent(new Event('change', { bubbles: true }));
+
+        console.log("DEBUG content.js: Dispatching keydown event for Enter.");
+        inputArea.dispatchEvent(new KeyboardEvent('keydown', {
+            key: 'Enter',
+            code: 'Enter',
+            keyCode: 13,
+            which: 13,
+            bubbles: true,
+            cancelable: true
+        }));
 
         setTimeout(() => {
             const submitButton = getSubmitButton();
