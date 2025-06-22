@@ -1,54 +1,90 @@
-# ChatGPT Prompt Manager
+# 💬 ChatGPT Prompt Manager  
+*A Chrome extension to organize, run, and automate ChatGPT prompts and prompt chains.*
 
-A Chrome extension for managing and executing ChatGPT prompts and prompt chains.
+---
 
-## Features
+## 🧠 Overview
 
-- **Store prompts locally** in `chrome.storage` with title, text, description, tags and favorite flag.
-- **Create prompt chains** consisting of multiple prompts executed sequentially.
-- **Variable placeholders**: prompts can contain `{{variable}}` tokens that are filled in when executed.
-- **Tagging**: assign comma-separated tags to prompts and chains and search by them.
-- **Popup interface**: edit, delete, favorite, and run prompts or chains.
-- **Content script integration**: automatically sends prompts to an open ChatGPT tab and waits for the response.
-- **Light/Dark theme switch**: toggle between light and dark modes via the header icon or Alt+L.
-- **Collapsible cards**: click a prompt or chain to show or hide its details for a cleaner overview.
-- **Search**: filter items by title, description or tags using the search box.
-- **Drag and drop**: reorder prompts within a chain via a simple drag handle.
-- **Import/Export**: backup all prompts and chains as JSON files from the settings view.
-- **Global prompt delay**: set a delay (in seconds) between prompts when running a chain.
-- **Chain progress overlay**: displays which prompt of a chain is executing. During wait periods a small circular timer counts down the remaining seconds.
+**ChatGPT Prompt Manager** is a lightweight Chrome extension that helps you save, organize, and reuse prompts for ChatGPT. You can also create **prompt chains** — sequences of prompts that run automatically. Whether you're a developer, writer, researcher, or power user, this tool streamlines your interactions with ChatGPT and boosts productivity.
 
-## Installation
+---
+
+## ✨ Features
+
+- **Prompt storage**: Save prompts locally with titles, descriptions, tags, and favorites.
+- **Prompt chains**: Create and execute sequences of prompts step-by-step.
+- **Dynamic variables**: Use `{{variable}}` placeholders to insert values at runtime.
+- **Search & tagging**: Filter prompts by tags, titles, or descriptions.
+- **Drag and drop**: Reorder prompts in a chain with a simple drag handle.
+- **Theme toggle**: Switch between dark and light mode via header icon or `Alt+L`.
+- **Collapsible cards**: Expand or collapse prompt details for a cleaner interface.
+- **ChatGPT integration**: Automatically sends prompts to an open ChatGPT tab and detects responses.
+- **Chain progress overlay**: Visual indicator shows execution status and countdown between steps.
+- **Import/export**: Backup and share prompts/chains as JSON files.
+- **Global delay**: Add a delay (in seconds) between chained prompts.
+
+---
+
+## 🎥 Demo / Screenshots
+
+> 📸 *Coming soon: Visuals showing prompt creation, chaining, and the popup UI.*
+
+---
+
+## 📦 Installation
 
 1. Clone or download this repository.
-2. Open Chrome and navigate to `chrome://extensions`.
-3. Enable "Developer mode".
-4. Click "Load unpacked" and select this project directory.
+2. Open Chrome and go to `chrome://extensions`.
+3. Enable **Developer mode** (top-right toggle).
+4. Click **Load unpacked** and select the project folder.
 
-The extension icon will appear in your toolbar.
+✅ The extension icon will appear in your Chrome toolbar.
 
-## Usage
+---
+
+## 🚀 Usage
 
 1. Open a ChatGPT tab (`https://chat.openai.com` or `https://chatgpt.com`).
 2. Click the extension icon to open the popup.
-3. Create new prompts or chains using the provided forms.
-4. Click the play button to execute a prompt or chain in the active ChatGPT tab.
-5. If variables are detected, you will be prompted to enter values before execution.
-6. Switch between light and dark themes using the header icon or the `Alt+L` shortcut. The selected mode is stored using `chrome.storage.local` so your preference is applied whenever you reopen the popup.
-7. Use the *Einstellungen* (settings) tab to export a backup or import prompts from a JSON file.
+3. Create new prompts or prompt chains using the form.
+4. Use `{{variable}}` tokens like `{{topic}}` in prompt text to define input fields.
+5. Click the ▶️ play button to run a prompt or chain in the active ChatGPT tab.
+6. Fill in variable values when prompted.
+7. Use the **Settings** tab to import/export JSON backups.
+8. Toggle the theme with the header icon or `Alt+L`. Your preference is saved.
 
-## File Overview
+---
 
-- `manifest.json` – Chrome extension manifest.
-- `popup.html`, `popup.js`, `style.css` – popup UI and logic for managing prompts and chains.
-- `content.js` – injected into ChatGPT pages to automate prompt submission and detect completion.
-- `background.js` – background service worker (currently minimal).
-- `icons/` – extension icons.
+## ⚙️ Configuration / Customization
 
-## Theme Switch
+- **Global delay**: Set a delay (in seconds) between chained prompts via the **Settings** tab.
+- **Theme mode**: Your selected theme is stored in `chrome.storage.local` and restored automatically.
+- **Favorites & tags**: Mark prompts as favorites and organize them using comma-separated tags.
+- **Keyboard shortcut**: Use `Alt+L` to switch between dark and light mode instantly.
 
-Use the icon in the popup header to toggle between light and dark modes or press `Alt+L` as a keyboard shortcut. The selected theme is saved in `chrome.storage.local` under the `theme` key, so your choice is automatically applied whenever the popup is opened.
+---
 
-## License
+## 🗂️ File Structure
 
-No explicit license is provided.
+| File/Folder        | Description |
+|--------------------|-------------|
+| `manifest.json`    | Chrome extension manifest file. |
+| `popup.html`       | Markup for the extension popup interface. |
+| `popup.js`         | Logic for managing prompts, chains, and UI behavior. |
+| `style.css`        | Styling for the popup. |
+| `content.js`       | Injected into ChatGPT tabs to send prompts and read responses. |
+| `background.js`    | Background script (minimal use). |
+| `icons/`           | Icon assets for the extension. |
+
+---
+
+## 🧪 Examples
+
+### 🔹 Single Prompt with Variable
+
+```json
+{
+  "title": "Summarize Topic",
+  "text": "Summarize the following topic in simple terms: {{topic}}",
+  "description": "Generates a simple summary of any topic using ChatGPT."
+}
