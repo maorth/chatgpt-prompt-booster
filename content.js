@@ -12,7 +12,10 @@
     }
 
     // --- DOM-Helfer ---
-    const getSubmitButton = () => document.querySelector('button#composer-submit-button');
+    const SUBMIT_BUTTON_SELECTOR = 'button[data-testid="send-button"]';
+    const getSubmitButton = () =>
+        document.querySelector(SUBMIT_BUTTON_SELECTOR) ||
+        document.querySelector('button#composer-submit-button');
     // Use the stable id selector for the chat input textarea
     const getInputArea = () => document.querySelector('#prompt-textarea');
     // Der datenbasierte Selektor für den Stop-Button
@@ -76,18 +79,24 @@
             cancelable: true
         }));
 
-        setTimeout(() => {
+        const tryClickSend = (attempt = 0) => {
+            console.log('DEBUG content.js: Attempting to find send button. Attempt', attempt);
             const submitButton = getSubmitButton();
             if (submitButton && !submitButton.disabled) {
+                console.log('DEBUG content.js: Send button FOUND!', submitButton);
                 submitButton.click();
                 waitForCompletion(onFinishCallback);
+            } else if (attempt < 10) {
+                console.error(`DEBUG content.js: Send button NOT found with selector: "${SUBMIT_BUTTON_SELECTOR}"`);
+                setTimeout(() => tryClickSend(attempt + 1), 100);
             } else {
                 alert('Fehler: Senden-Button konnte nach Texteingabe nicht gefunden werden.');
                 isExecuting = false;
                 try { chrome.runtime.sendMessage({ type: 'execution-error' }); } catch(e) {}
                 if(onFinishCallback) onFinishCallback();
             }
-        }, 500);
+        };
+        setTimeout(() => tryClickSend(0), 100);
     };
 
     // --- Logik für einzelne Prompts ---
