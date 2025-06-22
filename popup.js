@@ -655,19 +655,24 @@ const executeInContentScript = (d) => {
                 args: [d]
             }, (results) => {
                 if (chrome.runtime.lastError) {
-                    console.error("DEBUG popup.js: Error in executeScript:", chrome.runtime.lastError.message);
+                    console.error("DEBUG popup.js: Error in executeScript callback:", chrome.runtime.lastError.message);
+                    // --- IMPORTANT: Reset on error from executeScript callback ---
                     state.isExecuting = false;
                 } else {
-                    console.log("DEBUG popup.js: chrome.scripting.executeScript completed. Results:", results);
+                    console.log("DEBUG popup.js: chrome.scripting.executeScript completed.");
+                    // For *single prompts*, the execution is conceptually done here.
+                    // For chains/flows, wait for a message from content.js.
                     if (d.type === 'execute-prompt') {
                         state.isExecuting = false;
+                        console.log("DEBUG popup.js: Single prompt execution finished, isExecuting reset.");
                     }
                 }
             });
         } else {
-            console.log("DEBUG: No valid ChatGPT tab found. Alerting user.");
-            alert('Bitte öffne zuerst einen Tab mit ChatGPT.');
+            // --- IMPORTANT: Reset if no tab found ---
+            console.log("DEBUG popup.js: No valid ChatGPT tab found. Resetting isExecuting.");
             state.isExecuting = false;
+            alert('Bitte öffne zuerst einen Tab mit ChatGPT.');
         }
     };
 
@@ -971,8 +976,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 });
 
-chrome.runtime.onMessage.addListener((msg) => {
-    if (msg && (msg.type === 'execution-complete' || msg.type === 'execution-error')) {
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    if (message.type === 'execution-complete') {
+        console.log("DEBUG popup.js: Received 'execution-complete' from content.js. Resetting isExecuting.");
+        state.isExecuting = false;
+    } else if (message.type === 'execution-error') {
+        console.error("DEBUG popup.js: Received 'execution-error' from content.js:", message.message);
         state.isExecuting = false;
     }
+    sendResponse({ status: 'ok' });
+    return true;
 });
