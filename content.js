@@ -12,10 +12,20 @@
     }
 
     // --- DOM-Helfer ---
-    const SUBMIT_BUTTON_SELECTOR = 'button[data-testid="send-button"]';
-    const getSubmitButton = () =>
-        document.querySelector(SUBMIT_BUTTON_SELECTOR) ||
-        document.querySelector('button#composer-submit-button');
+    const SUBMIT_BUTTON_SELECTORS = [
+        'button[data-testid="send-button"]',
+        'button[aria-label="Send message"]',
+        'textarea[tabindex="0"] + button',
+        'button#composer-submit-button'
+    ];
+
+    const getSubmitButton = () => {
+        for (const sel of SUBMIT_BUTTON_SELECTORS) {
+            const btn = document.querySelector(sel);
+            if (btn) return btn;
+        }
+        return null;
+    };
     // Use the stable id selector for the chat input textarea
     const getInputArea = () => document.querySelector('#prompt-textarea');
     // Der datenbasierte Selektor für den Stop-Button
@@ -79,24 +89,27 @@
             cancelable: true
         }));
 
-        const tryClickSend = (attempt = 0) => {
-            console.log('DEBUG content.js: Attempting to find send button. Attempt', attempt);
+        const findAndClickSendButton = (attempts = 0) => {
+            const MAX_ATTEMPTS = 20;
+            const RETRY_DELAY_MS = 100;
+
             const submitButton = getSubmitButton();
             if (submitButton && !submitButton.disabled) {
-                console.log('DEBUG content.js: Send button FOUND!', submitButton);
+                console.log("DEBUG content.js: Send button FOUND and enabled. Clicking now!", submitButton);
                 submitButton.click();
                 waitForCompletion(onFinishCallback);
-            } else if (attempt < 10) {
-                console.error(`DEBUG content.js: Send button NOT found with selector: "${SUBMIT_BUTTON_SELECTOR}"`);
-                setTimeout(() => tryClickSend(attempt + 1), 100);
+            } else if (attempts < MAX_ATTEMPTS) {
+                console.log(`DEBUG content.js: Send button not yet found or disabled. Retrying... (Attempt ${attempts + 1}/${MAX_ATTEMPTS})`);
+                setTimeout(() => findAndClickSendButton(attempts + 1), RETRY_DELAY_MS);
             } else {
+                console.error("DEBUG content.js: Send button NOT found or enabled after multiple attempts.");
                 alert('Fehler: Senden-Button konnte nach Texteingabe nicht gefunden werden.');
                 isExecuting = false;
                 try { chrome.runtime.sendMessage({ type: 'execution-error' }); } catch(e) {}
                 if(onFinishCallback) onFinishCallback();
             }
         };
-        setTimeout(() => tryClickSend(0), 100);
+        findAndClickSendButton();
     };
 
     // --- Logik für einzelne Prompts ---
