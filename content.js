@@ -50,8 +50,22 @@
             return;
         }
         
-        inputArea.innerText = text;
+        inputArea.focus();
+
+        const dataTransfer = new DataTransfer();
+        dataTransfer.setData('text/plain', text);
+
+        const pasteEvent = new ClipboardEvent('paste', {
+            clipboardData: dataTransfer,
+            bubbles: true,
+            cancelable: true
+        });
+
+        inputArea.dispatchEvent(pasteEvent);
+
         inputArea.dispatchEvent(new Event('input', { bubbles: true }));
+
+        console.log("DEBUG content.js: Prompt inserted via simulated paste event.");
 
         setTimeout(() => {
             const submitButton = getSubmitButton();
