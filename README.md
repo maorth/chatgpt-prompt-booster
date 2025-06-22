@@ -17,6 +17,8 @@ A Chrome extension for managing and executing ChatGPT prompts and prompt chains.
 - **Import/Export**: backup all prompts and chains as JSON files from the settings view.
 - **Global prompt delay**: set a delay (in seconds) between prompts when running a chain.
 - **Chain progress overlay**: displays which prompt of a chain is executing. During wait periods a small circular timer counts down the remaining seconds.
+- **Side panel support**: keep the manager open in Chrome's side panel for quick access while chatting.
+- **Flows**: define multi-step flows as a single text separated by a custom delimiter and run each step sequentially.
 
 ## Installation
 
@@ -30,7 +32,7 @@ The extension icon will appear in your toolbar.
 ## Usage
 
 1. Open a ChatGPT tab (`https://chat.openai.com` or `https://chatgpt.com`).
-2. Click the extension icon to open the popup.
+2. Click the extension icon to open the popup or use Chrome's side panel for a persistent view.
 3. Create new prompts or chains using the provided forms.
 4. Click the play button to execute a prompt or chain in the active ChatGPT tab.
 5. If variables are detected, you will be prompted to enter values before execution.
