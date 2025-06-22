@@ -9,6 +9,10 @@
     "activeTab",
     "sidePanel"
   ],
+  "host_permissions": [ // DIESER ABSCHNITT IST DER SCHLÜSSEL
+    "https://chat.openai.com/*",
+    "https://chatgpt.com/*"
+  ],
   "action": {
     "default_title": "Prompt Manager",
     "default_icon": {
