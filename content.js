@@ -26,8 +26,8 @@
         }
         return null;
     };
-    // Use the stable id selector for the chat input textarea
-    const getInputArea = () => document.querySelector('#prompt-textarea');
+    // Selector for the ChatGPT input field (now a contenteditable div)
+    const getInputArea = () => document.querySelector('div[contenteditable="true"]');
     // Der datenbasierte Selektor für den Stop-Button
     const getStopButton = () => document.querySelector('button[data-testid="stop-button"]');
 
@@ -57,7 +57,7 @@
     const submitPrompt = (text, onFinishCallback) => {
         const inputArea = getInputArea();
         if (!inputArea) {
-            console.error("DEBUG content.js: ChatGPT input textarea not found!");
+        console.error("DEBUG content.js: ChatGPT input field not found!");
             alert('Fehler: Eingabebereich nicht gefunden.');
             isExecuting = false;
             try { chrome.runtime.sendMessage({ type: 'execution-error' }); } catch(e) {}
@@ -66,12 +66,12 @@
         }
         
         console.log("DEBUG content.js: Original promptText:", text);
-        console.log("DEBUG content.js: Textarea found:", inputArea);
+        console.log("DEBUG content.js: Chat input found:", inputArea);
 
         inputArea.focus();
 
-        inputArea.value = text;
-        console.log("DEBUG content.js: Textarea value set. Current value:", inputArea.value);
+        inputArea.innerText = text;
+        console.log("DEBUG content.js: Input field text set. Current value:", inputArea.innerText);
 
         console.log("DEBUG content.js: Dispatching input event.");
         inputArea.dispatchEvent(new Event('input', { bubbles: true }));
