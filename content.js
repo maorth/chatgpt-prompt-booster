@@ -56,11 +56,11 @@
     const submitPrompt = (text, onFinishCallback) => {
         const inputArea = getInputArea();
         if (!inputArea) {
-        console.error("DEBUG content.js: ChatGPT input field not found!");
+            console.error("DEBUG content.js: ChatGPT input field not found!");
             alert('Fehler: Eingabebereich nicht gefunden.');
             isExecuting = false;
-            try { chrome.runtime.sendMessage({ type: 'execution-error' }); } catch(e) {}
-            if(onFinishCallback) onFinishCallback();
+            try { chrome.runtime.sendMessage({ type: 'execution-error', message: 'input-area-missing' }); } catch(e) {}
+            if (onFinishCallback) onFinishCallback();
             return;
         }
         
@@ -99,8 +99,8 @@
                 console.error("DEBUG content.js: Send button NOT found or enabled after multiple attempts.");
                 alert('Fehler: Senden-Button konnte nach Texteingabe nicht gefunden werden.');
                 isExecuting = false;
-                try { chrome.runtime.sendMessage({ type: 'execution-error' }); } catch(e) {}
-                if(onFinishCallback) onFinishCallback();
+                try { chrome.runtime.sendMessage({ type: 'execution-error', message: 'send-button-missing' }); } catch(e) {}
+                if (onFinishCallback) onFinishCallback();
             }
         };
         findAndClickSendButton();
@@ -323,7 +323,7 @@
     // --- Zentraler Event-Listener ---
     const handleRunRequest = (d) => {
         if (isExecuting) {
-            alert('Es wird bereits ein Prompt oder eine Chain ausgeführt.');
+            alert('Es wird bereits ein Prompt oder eine Chain ausgeführt (intern).');
             return;
         }
 
@@ -341,6 +341,7 @@
             executeFlowStep({ text, step, total, delay });
         } else {
             isExecuting = false;
+            try { chrome.runtime.sendMessage({ type: 'execution-error', message: 'unknown-execution-type' }); } catch(e) {}
         }
     };
 
