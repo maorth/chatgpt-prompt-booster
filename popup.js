@@ -11,11 +11,11 @@ const ICON_TRASH = `<svg width="16" height="16" viewBox="0 0 24 24" fill="curren
 const ICON_PLUS = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 
 const ACCENT_PRESETS = {
-    purple: { color: '#6750A4', hover: '#56318d' },
-    blue: { color: '#1E88E5', hover: '#1565C0' },
-    green: { color: '#43A047', hover: '#2E7D32' },
-    orange: { color: '#FB8C00', hover: '#EF6C00' },
-    red: { color: '#E53935', hover: '#C62828' }
+    purple: 'hsl(256, 34%, 48%)',
+    blue: 'hsl(208, 79%, 51%)',
+    green: 'hsl(123, 41%, 45%)',
+    orange: 'hsl(33, 100%, 49%)',
+    red: 'hsl(1, 77%, 55%)'
 };
 
 // --- STATE & CONFIG ---
@@ -782,8 +782,7 @@ const handleImportFile = async () => {
 };
 
 const applyTheme = () => {
-    // Apply the theme class to the root element so the CSS variables defined
-    // in :root.light-theme take effect.
+    // Toggle the light-theme class so the appropriate CSS variables apply.
     document.documentElement.classList.toggle('light-theme', state.theme === 'light');
     if (quickThemeToggleBtn) {
         quickThemeToggleBtn.innerHTML = state.theme === 'light' ? ICON_MOON : ICON_SUN;
@@ -792,32 +791,39 @@ const applyTheme = () => {
 
 const isValidHex = (val) => /^#(?:[0-9a-fA-F]{3}){1,2}$/.test(val);
 
-const darkenHex = (hex, factor) => {
-    let c = hex.replace('#', '');
-    if (c.length === 3) c = c.split('').map(x => x + x).join('');
-    let num = parseInt(c, 16);
-    let r = (num >> 16) & 255;
-    let g = (num >> 8) & 255;
-    let b = num & 255;
-    r = Math.round(r * (1 - factor));
-    g = Math.round(g * (1 - factor));
-    b = Math.round(b * (1 - factor));
-    const toHex = (n) => n.toString(16).padStart(2, '0');
-    return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+const hexToHsl = (hex) => {
+    hex = hex.replace('#', '');
+    if (hex.length === 3) hex = hex.split('').map(x => x + x).join('');
+    const r = parseInt(hex.slice(0, 2), 16) / 255;
+    const g = parseInt(hex.slice(2, 4), 16) / 255;
+    const b = parseInt(hex.slice(4, 6), 16) / 255;
+    const max = Math.max(r, g, b), min = Math.min(r, g, b);
+    let h, s, l = (max + min) / 2;
+    if (max === min) {
+        h = s = 0;
+    } else {
+        const d = max - min;
+        s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+        switch (max) {
+            case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+            case g: h = (b - r) / d + 2; break;
+            case b: h = (r - g) / d + 4; break;
+        }
+        h *= 60;
+    }
+    s = Math.round(s * 100);
+    l = Math.round(l * 100);
+    return `hsl(${Math.round(h)}, ${s}%, ${l}%)`;
 };
 
 const applyAccentColor = () => {
-    let color, hover;
+    let color;
     if (state.accentColor === 'custom' && isValidHex(state.customAccentColor)) {
-        color = state.customAccentColor;
-        hover = darkenHex(color, 0.15);
+        color = hexToHsl(state.customAccentColor);
     } else {
-        const preset = ACCENT_PRESETS[state.accentColor] || ACCENT_PRESETS.purple;
-        color = preset.color;
-        hover = preset.hover;
+        color = ACCENT_PRESETS[state.accentColor] || ACCENT_PRESETS.purple;
     }
-    document.documentElement.style.setProperty('--accent', color);
-    document.documentElement.style.setProperty('--accent-hover', hover);
+    document.documentElement.style.setProperty('--accent-color', color);
     if (accentColorSelect) accentColorSelect.value = state.accentColor;
     if (customAccentColorInput) {
         customAccentColorInput.classList.toggle('hidden', state.accentColor !== 'custom');
@@ -868,7 +874,7 @@ const updateDelayUI = () => {
     if (chainDelayDisplay) chainDelayDisplay.textContent = `${val} s`;
     const max = parseInt(chainDelayInput.max, 10) || 10;
     const percentage = (val / max) * 100;
-    chainDelayInput.style.background = `linear-gradient(to right, var(--accent) 0%, var(--accent) ${percentage}%, var(--slider-track) ${percentage}%, var(--slider-track) 100%)`;
+    chainDelayInput.style.background = `linear-gradient(to right, var(--accent-color) 0%, var(--accent-color) ${percentage}%, var(--slider-track) ${percentage}%, var(--slider-track) 100%)`;
 };
 
 const handleDelayChange = async () => {
