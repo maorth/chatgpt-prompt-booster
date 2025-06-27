@@ -361,6 +361,12 @@ const parseFlowText = (txt) => {
     const sep = state.flowSeparator || '~';
     return txt.split(sep).map(s => s.trim()).filter(Boolean);
 };
+
+const detectReferences = (t) => {
+    const refs = [];
+    if (t.includes('<LAST_GPT_MSG>')) refs.push('LAST_GPT_MSG');
+    return refs;
+};
 const handleSearchInput = () => { searchTerm = searchBox.value; saveUIState(); render(); };
 const handleFavoritesToggle = () => { showOnlyFavorites = !showOnlyFavorites; saveUIState(); render(); };
 const handleTagFilterClick = (e) => {
@@ -437,7 +443,8 @@ const handleListClick = async (e) => {
             const v = extractVariables(p.text);
             if (v.length === 0) {
                 state.isExecuting = true;
-                executeInContentScript({ type: 'execute-prompt', text: p.text });
+                const refs = detectReferences(p.text);
+                executeInContentScript({ type: 'execute-prompt', text: p.text, resolvedReferences: refs });
             } else {
                 state.pendingExecution = { type: 'prompt', data: p };
                 renderVariableInputs(v);
@@ -455,7 +462,8 @@ const handleListClick = async (e) => {
             const v = extractVariables(a);
             if (v.length === 0) {
                 state.isExecuting = true;
-                executeInContentScript({ type: 'execute-chain', chain: c, delay: state.chainDelay });
+                const chainWithRefs = { ...c, prompts: c.prompts.map(pr => ({ ...pr, resolvedReferences: detectReferences(pr.text) })) };
+                executeInContentScript({ type: 'execute-chain', chain: chainWithRefs, delay: state.chainDelay });
             } else {
                 state.pendingExecution = { type: 'chain', data: c };
                 renderVariableInputs(v);
@@ -595,9 +603,14 @@ const handleVariableSubmit = (e) => {
         return p;
     };
     if (type === 'prompt') {
-        executeInContentScript({ type: 'execute-prompt', text: sub(data.text) });
+        const processedText = sub(data.text);
+        const refs = detectReferences(processedText);
+        executeInContentScript({ type: 'execute-prompt', text: processedText, resolvedReferences: refs });
     } else if (type === 'chain') {
-        const p = { ...data, prompts: data.prompts.map(p => ({ ...p, text: sub(p.text) })) };
+        const p = { ...data, prompts: data.prompts.map(pr => {
+            const t = sub(pr.text);
+            return { ...pr, text: t, resolvedReferences: detectReferences(t) };
+        }) };
         executeInContentScript({ type: 'execute-chain', chain: p, delay: state.chainDelay });
     } else if (type === 'flow') {
         runFlow(data, v, steps);
@@ -620,12 +633,13 @@ const runFlow = async (flow, vars, stepsArr) => {
             const key = `OUTPUT_STEP_${j}`;
             text = text.replace(new RegExp(`{{\\s*${key}\\s*}}`, 'g'), outputs[j] || '');
         }
-        const output = await executeFlowStep(text, i + 1, steps.length);
+        const refs = detectReferences(text);
+        const output = await executeFlowStep(text, i + 1, steps.length, refs);
         outputs[i + 1] = output;
     }
 };
 
-const executeFlowStep = (text, step, total) => {
+const executeFlowStep = (text, step, total, refs = []) => {
     return new Promise((resolve) => {
         const listener = (msg) => {
             if (msg && msg.type === 'flow-step-result' && msg.step === step) {
@@ -634,7 +648,7 @@ const executeFlowStep = (text, step, total) => {
             }
         };
         chrome.runtime.onMessage.addListener(listener);
-        executeInContentScript({ type: 'execute-flow-step', text, step, total, delay: state.chainDelay });
+        executeInContentScript({ type: 'execute-flow-step', text, step, total, delay: state.chainDelay, resolvedReferences: refs });
     });
 };
 const executeInContentScript = (d) => {

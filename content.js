@@ -107,8 +107,9 @@
     };
 
     // --- Logik für einzelne Prompts ---
-    const executeSinglePrompt = (text) => {
-        submitPrompt(text, () => {
+    const executeSinglePrompt = (text, refs) => {
+        const processed = resolveReferences(text, refs);
+        submitPrompt(processed, () => {
             isExecuting = false;
             try { chrome.runtime.sendMessage({ type: 'execution-complete' }); } catch(e) {}
         });
@@ -251,6 +252,28 @@
         setTimeout(() => { if (c.parentNode) c.remove(); }, 300);
     };
 
+    const getChatMessageContent = (referenceType) => {
+        if (referenceType === 'LAST_GPT_MSG') {
+            const assistantMessages = document.querySelectorAll('div[data-message-author-role="assistant"]');
+            const lastAssistantMessage = assistantMessages[assistantMessages.length - 1];
+            if (lastAssistantMessage) {
+                return lastAssistantMessage.innerText || '';
+            }
+            console.warn("DEBUG content.js: <LAST_GPT_MSG> requested but no assistant messages found in DOM.");
+        }
+        return '';
+    };
+
+    const resolveReferences = (text, refs) => {
+        let processed = text;
+        if (refs && refs.includes('LAST_GPT_MSG')) {
+            const last = getChatMessageContent('LAST_GPT_MSG');
+            processed = processed.replace(/<LAST_GPT_MSG>/g, last);
+            console.log('DEBUG content.js: <LAST_GPT_MSG> resolved. Processed text:', processed);
+        }
+        return processed;
+    };
+
     const waitBeforeNext = (cb) => {
         if (delaySeconds <= 0) { cb(); return; }
         updateStatusOverlay(currentPromptIndex, currentChain.length);
@@ -273,7 +296,8 @@
             return;
         }
         updateStatusOverlay(currentPromptIndex + 1, currentChain.length);
-        const promptText = currentChain[currentPromptIndex].text;
+        const stepObj = currentChain[currentPromptIndex];
+        const promptText = resolveReferences(stepObj.text, stepObj.resolvedReferences);
 
         submitPrompt(promptText, () => {
             currentPromptIndex++;
@@ -291,17 +315,13 @@
         });
     };
 
-    const getLastAssistantMessage = () => {
-        const msgs = document.querySelectorAll('div[data-message-author-role="assistant"]');
-        const last = msgs[msgs.length - 1];
-        return last ? last.innerText || '' : '';
-    };
 
-    const executeFlowStep = ({ text, step, total, delay }) => {
+    const executeFlowStep = ({ text, step, total, delay, resolvedReferences }) => {
         delaySeconds = typeof delay === 'number' && delay >= 0 ? delay : 0;
         updateStatusOverlay(step, total);
-        submitPrompt(text, () => {
-            const output = getLastAssistantMessage();
+        const processed = resolveReferences(text, resolvedReferences);
+        submitPrompt(processed, () => {
+            const output = getChatMessageContent('LAST_GPT_MSG');
             const finish = () => {
                 isExecuting = false;
                 if (step === total) {
@@ -328,17 +348,17 @@
         }
 
         isExecuting = true;
-        const { type, text, chain, delay, step, total } = d;
+        const { type, text, chain, delay, step, total, resolvedReferences } = d;
         delaySeconds = typeof delay === 'number' && delay >= 0 ? delay : 0;
 
         if (type === 'execute-prompt') {
-            executeSinglePrompt(text);
+            executeSinglePrompt(text, resolvedReferences);
         } else if (type === 'execute-chain' && chain.prompts.length > 0) {
             currentChain = chain.prompts;
             currentPromptIndex = 0;
             runNextChainStep();
         } else if (type === 'execute-flow-step') {
-            executeFlowStep({ text, step, total, delay });
+            executeFlowStep({ text, step, total, delay, resolvedReferences });
         } else {
             isExecuting = false;
             try { chrome.runtime.sendMessage({ type: 'execution-error', message: 'unknown-execution-type' }); } catch(e) {}
