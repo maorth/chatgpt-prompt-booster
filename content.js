@@ -61,7 +61,8 @@
         } else if (platform === 'gemini') {
             const selectors = [
                 'button[aria-label="Stop generating"]',
-                'button[aria-label*="Stop"]',
+                'button[aria-label="Stop response"]',
+                'button[aria-label="Stop"]',
                 'button[aria-label="Cancel"]',
                 'mat-icon[fonticon="magic_button_loading"]',
                 '[data-loading-indicator]',
@@ -82,7 +83,7 @@
      * Finale, korrekte Kernlogik: Wartet auf das Erscheinen und Verschwinden des Stop-Buttons.
      * @param {function} onFinishCallback - Die Funktion, die nach Erfolg aufgerufen wird.
      */
-    const waitForCompletion = (onFinishCallback) => {
+    const waitForCompletion = (onFinishCallback, stepInfo = '') => {
         let hasGenerationStarted = false;
         const startTime = Date.now();
         const timeoutMs = 60 * 1000; // 60 seconds timeout
@@ -90,27 +91,27 @@
 
         const intervalId = setInterval(() => {
             if (!platformChecked) {
-                console.log("DEBUG content.js: waitForCompletion started for platform:", getCurrentPlatform());
+                console.log("DEBUG content.js: waitForCompletion started for platform:", getCurrentPlatform(), stepInfo ? `| step: ${stepInfo}` : '');
                 platformChecked = true;
             }
 
             const stopIndicator = getStopIndicator();
-            console.log(`DEBUG content.js: waitForCompletion loop. hasGenerationStarted: ${hasGenerationStarted}, StopIndicator present: ${!!stopIndicator}. Time elapsed: ${((Date.now() - startTime) / 1000).toFixed(1)}s`);
+            console.log(`DEBUG content.js: waitForCompletion loop. step: ${stepInfo} | hasGenerationStarted: ${hasGenerationStarted}, StopIndicator present: ${!!stopIndicator}. Time elapsed: ${((Date.now() - startTime) / 1000).toFixed(1)}s`);
 
             if (!hasGenerationStarted && stopIndicator) {
                 hasGenerationStarted = true;
-                console.log("DEBUG content.js: AI generation (Gemini) started (stop indicator appeared).");
+                console.log("DEBUG content.js: AI generation (Gemini) started (stop indicator appeared).", stepInfo ? `| step: ${stepInfo}` : '');
             }
 
             if (hasGenerationStarted && !stopIndicator) {
-                console.log("DEBUG content.js: AI generation (Gemini) completed (stop indicator disappeared).");
+                console.log("DEBUG content.js: AI generation (Gemini) completed (stop indicator disappeared).", stepInfo ? `| step: ${stepInfo}` : '');
                 clearInterval(intervalId);
                 onFinishCallback();
                 return;
             }
 
             if (Date.now() - startTime > timeoutMs) {
-                console.error("DEBUG content.js: AI generation (Gemini) timed out after 60 seconds. Aborting completion wait.");
+                console.error("DEBUG content.js: AI generation (Gemini) timed out after 60 seconds. Aborting completion wait.", stepInfo ? `| step: ${stepInfo}` : '');
                 clearInterval(intervalId);
                 try { chrome.runtime.sendMessage({ type: 'execution-error', message: 'AI generation timed out on content.js side (Gemini).' }); } catch(e) {}
                 isExecuting = false;
@@ -120,7 +121,7 @@
         }, 200);
     };
     
-    const submitPrompt = (text, onFinishCallback) => {
+    const submitPrompt = (text, onFinishCallback, stepInfo = '', delayBeforeWaitMs = 0) => {
         const inputArea = getInputArea();
         if (!inputArea) {
             console.error("DEBUG content.js: ChatGPT input field not found!");
@@ -158,10 +159,17 @@
             if (submitButton && !submitButton.disabled) {
                 console.log("DEBUG content.js: Send button FOUND and enabled. Clicking now!", submitButton);
                 submitButton.click();
-                waitForCompletion(() => {
-                    console.log("DEBUG content.js: !!! ONFINISH CALLBACK TRIGGERED !!!");
-                    if (onFinishCallback) onFinishCallback();
-                });
+                const startWait = () => {
+                    waitForCompletion(() => {
+                        console.log("DEBUG content.js: !!! ONFINISH CALLBACK TRIGGERED !!!");
+                        if (onFinishCallback) onFinishCallback();
+                    }, stepInfo);
+                };
+                if (delayBeforeWaitMs > 0) {
+                    setTimeout(startWait, delayBeforeWaitMs);
+                } else {
+                    startWait();
+                }
             } else if (attempts < MAX_ATTEMPTS) {
                 console.log(`DEBUG content.js: Send button not yet found or disabled. Retrying... (Attempt ${attempts + 1}/${MAX_ATTEMPTS})`);
                 setTimeout(() => findAndClickSendButton(attempts + 1), RETRY_DELAY_MS);
@@ -182,7 +190,7 @@
         submitPrompt(processed, () => {
             isExecuting = false;
             try { chrome.runtime.sendMessage({ type: 'execution-complete' }); } catch(e) {}
-        });
+        }, 'single');
     };
 
     // --- Logik für Ketten ---
@@ -381,6 +389,8 @@
         const promptText = resolveReferences(stepObj.text, stepObj.resolvedReferences);
 
         try {
+            const stepInfo = `${currentPromptIndex + 1}/${currentChain.length}`;
+            const delayMs = currentPromptIndex > 0 ? 100 : 0;
             submitPrompt(promptText, () => {
                 currentPromptIndex++;
                 if (currentPromptIndex >= currentChain.length) {
@@ -394,7 +404,7 @@
                 } else {
                     waitBeforeNext(runNextChainStep);
                 }
-            });
+            }, stepInfo, delayMs);
         } catch (error) {
             console.error("DEBUG content.js: Uncaught error during chain step:", error);
             isExecuting = false;
@@ -412,6 +422,8 @@
         updateStatusOverlay(step, total);
         const processed = resolveReferences(text, resolvedReferences);
         try {
+            const stepInfo = `${step}/${total}`;
+            const delayMs = step > 1 ? 100 : 0;
             submitPrompt(processed, () => {
                 const output = getLastAssistantMessage();
                 const finish = () => {
@@ -429,7 +441,7 @@
                 } else {
                     finish();
                 }
-            });
+            }, stepInfo, delayMs);
         } catch (error) {
             console.error("DEBUG content.js: Uncaught error during flow step:", error);
             isExecuting = false;
