@@ -59,22 +59,20 @@
         if (platform === 'chatgpt') {
             return document.querySelector('button[data-testid="stop-button"]');
         } else if (platform === 'gemini') {
-            const selectors = [
-                'button[aria-label="Stop generating"]',
-                'button[aria-label="Stop response"]',
-                'button[aria-label="Stop"]',
-                'button[aria-label="Cancel"]',
-                'mat-icon[fonticon="magic_button_loading"]',
-                '[data-loading-indicator]',
-                'div[role="progressbar"]',
-                'div[data-response-status="generating"]'
-            ];
-            for (const sel of selectors) {
-                const el = document.querySelector(sel);
-                if (el) return el;
-            }
-            const altBtn = Array.from(document.querySelectorAll('button[aria-label]')).find(b => /stop|stopp|cancel|abbrechen/i.test(b.getAttribute('aria-label')));
-            if (altBtn) return altBtn;
+            // Try the most explicit stop button first
+            const stopButton = document.querySelector('button[aria-label="Stop generating"]');
+            if (stopButton && !stopButton.disabled) return stopButton;
+
+            // Loading spinner/icon commonly shown during generation
+            const loadingIcon = document.querySelector('mat-icon[fonticon="magic_button_loading"]');
+            if (loadingIcon) return loadingIcon;
+
+            // Fallback: generic indicators that may signal active generation
+            const politeStatus = document.querySelector('div[role="status"][aria-live="polite"]');
+            if (politeStatus) return politeStatus;
+
+            const streamingContainer = document.querySelector('div.response-area.is-streaming');
+            if (streamingContainer) return streamingContainer;
         }
         return null;
     };
@@ -333,15 +331,27 @@
     const getLastAssistantMessage = () => {
         const platform = getCurrentPlatform();
         let msgs = null;
+
         if (platform === 'chatgpt') {
             msgs = document.querySelectorAll('div[data-message-author-role="assistant"]');
         } else if (platform === 'gemini') {
-            msgs = document.querySelectorAll('[aria-label="Assistant response"]');
+            // Gemini uses various containers for the assistant response text.
+            // Try several selectors in order of reliability.
+            msgs = document.querySelectorAll('div[aria-label="Assistant response"]');
+            if (!msgs || msgs.length === 0) {
+                msgs = document.querySelectorAll('.model-response-text');
+            }
+            if (!msgs || msgs.length === 0) {
+                msgs = document.querySelectorAll('.response-container div.markdown-text');
+            }
         }
+
         if (msgs && msgs.length > 0) {
             const last = msgs[msgs.length - 1];
-            return last ? (last.innerText || last.textContent || '') : '';
+            const textEl = last.querySelector('.markdown-text, .model-response-text') || last;
+            return textEl ? (textEl.innerText || textEl.textContent || '') : '';
         }
+
         console.warn("DEBUG content.js: No assistant messages found for platform", platform);
         return '';
     };
