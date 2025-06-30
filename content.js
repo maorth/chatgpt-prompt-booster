@@ -59,9 +59,21 @@
         if (platform === 'chatgpt') {
             return document.querySelector('button[data-testid="stop-button"]');
         } else if (platform === 'gemini') {
-            return document.querySelector('button[aria-label="Stop generating"]') ||
-                   document.querySelector('mat-icon[fonticon="magic_button_loading"]') ||
-                   document.querySelector('div[data-response-status="generating"]');
+            const selectors = [
+                'button[aria-label="Stop generating"]',
+                'button[aria-label*="Stop"]',
+                'button[aria-label="Cancel"]',
+                'mat-icon[fonticon="magic_button_loading"]',
+                '[data-loading-indicator]',
+                'div[role="progressbar"]',
+                'div[data-response-status="generating"]'
+            ];
+            for (const sel of selectors) {
+                const el = document.querySelector(sel);
+                if (el) return el;
+            }
+            const altBtn = Array.from(document.querySelectorAll('button[aria-label]')).find(b => /stop|stopp|cancel|abbrechen/i.test(b.getAttribute('aria-label')));
+            if (altBtn) return altBtn;
         }
         return null;
     };
