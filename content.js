@@ -36,13 +36,10 @@
                 if (btn) return btn;
             }
         } else if (platform === 'gemini') {
-            for (const sel of [
-                'button[aria-label="Nachricht senden"]',
-                'button.send-button.submit'
-            ]) {
-                const btn = document.querySelector(sel);
-                if (btn) return btn;
-            }
+            // Prioritize the specific aria-label to avoid matching the "Stop" button
+            const sendBtn = document.querySelector('button[aria-label="Nachricht senden"]');
+            if (sendBtn) return sendBtn;
+            // Generic fallback removed to prevent accidental Stop button clicks
         }
         return null;
     };
