@@ -63,6 +63,8 @@
             return document.querySelector('button[data-testid="stop-button"]');
         } else if (platform === 'gemini') {
             return document.querySelector('button[aria-label="Stop generating"]') ||
+                   document.querySelector('button[aria-label*="Stop"]') ||
+                   document.querySelector('button[aria-label="Cancel"]') ||
                    document.querySelector('mat-icon[fonticon="magic_button_loading"]') ||
                    document.querySelector('[data-loading-indicator]') ||
                    document.querySelector('div[data-response-status="generating"]');
@@ -143,9 +145,9 @@
             } else {
                 console.error("DEBUG content.js: Send button NOT found or enabled after multiple attempts.");
                 alert('Fehler: Senden-Button konnte nach Texteingabe nicht gefunden werden.');
+                if (onFinishCallback) onFinishCallback();
                 isExecuting = false;
                 try { chrome.runtime.sendMessage({ type: 'execution-error', message: 'send-button-missing' }); } catch(e) {}
-                if (onFinishCallback) onFinishCallback();
             }
         };
         findAndClickSendButton();
