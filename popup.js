@@ -34,6 +34,26 @@ let state = {
     showTagsFilter: true,
     isExecuting: false
 };
+let executionTimeoutId = null;
+
+const startExecutionTimeout = () => {
+    if (executionTimeoutId) clearTimeout(executionTimeoutId);
+    executionTimeoutId = setTimeout(() => {
+        if (state.isExecuting) {
+            console.warn("DEBUG popup.js: Failsafe timeout triggered! isExecuting was stuck. Resetting.");
+            state.isExecuting = false;
+            alert('Hinweis: Eine Ausführung scheint festzustecken und wurde zurückgesetzt. Bitte prüfe den ChatGPT/Gemini-Tab auf Fehler.');
+        }
+        executionTimeoutId = null;
+    }, 120 * 1000);
+};
+
+const clearExecutionTimeout = () => {
+    if (executionTimeoutId) {
+        clearTimeout(executionTimeoutId);
+        executionTimeoutId = null;
+    }
+};
 let draggedItemIndex = null;
 let draggedCardId = null;
 let draggedCardOriginalIndex = null;
@@ -443,6 +463,7 @@ const handleListClick = async (e) => {
             const v = extractVariables(p.text);
             if (v.length === 0) {
                 state.isExecuting = true;
+                startExecutionTimeout();
                 const refs = detectReferences(p.text);
                 executeInContentScript({ type: 'execute-prompt', text: p.text, resolvedReferences: refs });
             } else {
@@ -462,6 +483,7 @@ const handleListClick = async (e) => {
             const v = extractVariables(a);
             if (v.length === 0) {
                 state.isExecuting = true;
+                startExecutionTimeout();
                 const chainWithRefs = { ...c, prompts: c.prompts.map(pr => ({ ...pr, resolvedReferences: detectReferences(pr.text) })) };
                 executeInContentScript({ type: 'execute-chain', chain: chainWithRefs, delay: state.chainDelay });
             } else {
@@ -504,6 +526,7 @@ const handleListClick = async (e) => {
             const vars = extractVariables(steps.join(' ')).filter(v => !/^OUTPUT_STEP_\d+$/.test(v));
             if (vars.length === 0) {
                 state.isExecuting = true;
+                startExecutionTimeout();
                 runFlow(f, {}, steps);
             } else {
                 state.pendingExecution = { type: 'flow', data: f, steps };
@@ -590,6 +613,7 @@ const handleVariableSubmit = (e) => {
         return;
     }
     state.isExecuting = true;
+    startExecutionTimeout();
     const v = {};
     variableFieldsContainer.querySelectorAll('.variable-input').forEach(i => {
         v[i.name] = i.value;
@@ -672,12 +696,14 @@ const executeInContentScript = (d) => {
                     console.error("DEBUG popup.js: Error in executeScript callback:", chrome.runtime.lastError.message);
                     // --- IMPORTANT: Reset on error from executeScript callback ---
                     state.isExecuting = false;
+                    clearExecutionTimeout();
                 } else {
                     console.log("DEBUG popup.js: chrome.scripting.executeScript completed.");
                     // For *single prompts*, the execution is conceptually done here.
                     // For chains/flows, wait for a message from content.js.
                     if (d.type === 'execute-prompt') {
                         state.isExecuting = false;
+                        clearExecutionTimeout();
                         console.log("DEBUG popup.js: Single prompt execution finished, isExecuting reset.");
                     }
                 }
@@ -686,6 +712,7 @@ const executeInContentScript = (d) => {
             // --- IMPORTANT: Reset if no tab found ---
             console.log("DEBUG popup.js: No valid ChatGPT tab found. Resetting isExecuting.");
             state.isExecuting = false;
+            clearExecutionTimeout();
             alert('Bitte öffne zuerst einen Tab mit ChatGPT.');
         }
     };
@@ -1002,9 +1029,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.type === 'execution-complete') {
         console.log("DEBUG popup.js: Received 'execution-complete' from content.js. Resetting isExecuting.");
         state.isExecuting = false;
+        clearExecutionTimeout();
     } else if (message.type === 'execution-error') {
         console.error("DEBUG popup.js: Received 'execution-error' from content.js:", message.message);
         state.isExecuting = false;
+        clearExecutionTimeout();
     }
     sendResponse({ status: 'ok' });
     return true;

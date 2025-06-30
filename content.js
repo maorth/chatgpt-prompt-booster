@@ -56,39 +56,46 @@
         }
         return null;
     };
-    // Der datenbasierte Selektor für den Stop-Button (ChatGPT)
-    const getStopButton = () => document.querySelector('button[data-testid="stop-button"]');
-    const getGeminiStopIndicator = () =>
-        document.querySelector('button[aria-label="Stop generating"]') ||
-        document.querySelector('[data-loading-indicator]');
+    // Einheitliche Ermittlung eines Lade-/Stop-Indikators
+    const getStopIndicator = () => {
+        const platform = getCurrentPlatform();
+        if (platform === 'chatgpt') {
+            return document.querySelector('button[data-testid="stop-button"]');
+        } else if (platform === 'gemini') {
+            return document.querySelector('button[aria-label="Stop generating"]') ||
+                   document.querySelector('mat-icon[fonticon="magic_button_loading"]') ||
+                   document.querySelector('[data-loading-indicator]') ||
+                   document.querySelector('div[data-response-status="generating"]');
+        }
+        return null;
+    };
 
     /**
      * Finale, korrekte Kernlogik: Wartet auf das Erscheinen und Verschwinden des Stop-Buttons.
      * @param {function} onFinishCallback - Die Funktion, die nach Erfolg aufgerufen wird.
      */
-    const waitForCompletion = (onFinishCallback) => {
-        let hasGenerationStarted = false; // Merker, ob der Stop-Button schon einmal gesehen wurde.
-        
-        const intervalId = setInterval(() => {
-            const platform = getCurrentPlatform();
-            let stopIndicator = null;
-            if (platform === 'chatgpt') {
-                stopIndicator = getStopButton();
-            } else if (platform === 'gemini') {
-                stopIndicator = getGeminiStopIndicator();
-            }
+    const waitForCompletion = (onFinishCallback, timeoutMs = 60000) => {
+        let hasGenerationStarted = false;
+        const startTime = Date.now();
 
-            // Phase 1: Warten, bis der Stop-Button erscheint. Das bestätigt den Start der Generierung.
+        const intervalId = setInterval(() => {
+            const stopIndicator = getStopIndicator();
+
             if (!hasGenerationStarted && stopIndicator) {
                 hasGenerationStarted = true;
             }
 
-            // Phase 2: Warten, bis der erschienene Stop-Button wieder verschwindet. Das bestätigt das Ende.
             if (hasGenerationStarted && !stopIndicator) {
-                clearInterval(intervalId); // Polling beenden
-                onFinishCallback();      // Erfolgs-Callback ausführen
+                clearInterval(intervalId);
+                onFinishCallback();
+            } else if (Date.now() - startTime > timeoutMs) {
+                console.error("DEBUG content.js: AI generation timed out after 60 seconds.");
+                clearInterval(intervalId);
+                try { chrome.runtime.sendMessage({ type: 'execution-error', message: 'AI generation timed out on content.js side.' }); } catch(e) {}
+                isExecuting = false;
+                onFinishCallback();
             }
-        }, 200); // Prüfintervall: 200 Millisekunden
+        }, 200);
     };
     
     const submitPrompt = (text, onFinishCallback) => {
@@ -348,20 +355,30 @@
         const stepObj = currentChain[currentPromptIndex];
         const promptText = resolveReferences(stepObj.text, stepObj.resolvedReferences);
 
-        submitPrompt(promptText, () => {
-            currentPromptIndex++;
-            if (currentPromptIndex >= currentChain.length) {
-                isExecuting = false;
-                currentChain = [];
-                currentPromptIndex = 0;
-                updateStatusOverlay();
-                showSuccessOverlay();
-                hideStatusOverlay(4000);
-                try { chrome.runtime.sendMessage({ type: 'execution-complete' }); } catch(e) {}
-            } else {
-                waitBeforeNext(runNextChainStep);
-            }
-        });
+        try {
+            submitPrompt(promptText, () => {
+                currentPromptIndex++;
+                if (currentPromptIndex >= currentChain.length) {
+                    isExecuting = false;
+                    currentChain = [];
+                    currentPromptIndex = 0;
+                    updateStatusOverlay();
+                    showSuccessOverlay();
+                    hideStatusOverlay(4000);
+                    try { chrome.runtime.sendMessage({ type: 'execution-complete' }); } catch(e) {}
+                } else {
+                    waitBeforeNext(runNextChainStep);
+                }
+            });
+        } catch (error) {
+            console.error("DEBUG content.js: Uncaught error during chain step:", error);
+            isExecuting = false;
+            currentChain = [];
+            currentPromptIndex = 0;
+            updateStatusOverlay();
+            hideStatusOverlay(4000);
+            try { chrome.runtime.sendMessage({ type: 'execution-error', message: error.message || 'Chain step execution failed.' }); } catch(e) {}
+        }
     };
 
 
@@ -369,24 +386,31 @@
         delaySeconds = typeof delay === 'number' && delay >= 0 ? delay : 0;
         updateStatusOverlay(step, total);
         const processed = resolveReferences(text, resolvedReferences);
-        submitPrompt(processed, () => {
-            const output = getLastAssistantMessage();
-            const finish = () => {
-                isExecuting = false;
-                if (step === total) {
-                    showSuccessOverlay();
-                    hideStatusOverlay(4000);
-                    try { chrome.runtime.sendMessage({ type: 'execution-complete' }); } catch(e) {}
+        try {
+            submitPrompt(processed, () => {
+                const output = getLastAssistantMessage();
+                const finish = () => {
+                    isExecuting = false;
+                    if (step === total) {
+                        showSuccessOverlay();
+                        hideStatusOverlay(4000);
+                        try { chrome.runtime.sendMessage({ type: 'execution-complete' }); } catch(e) {}
+                    }
+                    chrome.runtime.sendMessage({ type: 'flow-step-result', step, output });
+                };
+                if (step < total && delaySeconds > 0) {
+                    showCountdownTimer(delaySeconds);
+                    setTimeout(() => { hideCountdownTimer(); finish(); }, delaySeconds * 1000);
+                } else {
+                    finish();
                 }
-                chrome.runtime.sendMessage({ type: 'flow-step-result', step, output });
-            };
-            if (step < total && delaySeconds > 0) {
-                showCountdownTimer(delaySeconds);
-                setTimeout(() => { hideCountdownTimer(); finish(); }, delaySeconds * 1000);
-            } else {
-                finish();
-            }
-        });
+            });
+        } catch (error) {
+            console.error("DEBUG content.js: Uncaught error during flow step:", error);
+            isExecuting = false;
+            try { chrome.runtime.sendMessage({ type: 'execution-error', message: error.message || 'Flow step execution failed.' }); } catch(e) {}
+            chrome.runtime.sendMessage({ type: 'flow-step-result', step, output: '' });
+        }
     };
 
     // --- Zentraler Event-Listener ---
