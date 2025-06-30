@@ -9,6 +9,7 @@ const ICON_PLAY = `<svg width="16" height="16" viewBox="0 0 16 16" fill="current
 const ICON_EDIT = `<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25z"/><path d="M20.71 7.04a1 1 0 000-1.41l-2.34-2.34a1 1 0 00-1.41 0L15.13 4.95l3.75 3.75 1.83-1.66z"/></svg>`;
 const ICON_TRASH = `<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M6 7v12a2 2 0 002 2h8a2 2 0 002-2V7"/><path d="M4 7h16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 7V4h6v3"/></svg>`;
 const ICON_PLUS = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+const ICON_BACK = `<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M15 6l-6 6 6 6" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 
 const ACCENT_PRESETS = {
     purple: 'hsl(256, 34%, 48%)',
@@ -32,6 +33,7 @@ let state = {
     chainDelay: 0,
     flowSeparator: '~',
     showTagsFilter: true,
+    viewHistory: [],
     isExecuting: false
 };
 let executionTimeoutId = null;
@@ -71,7 +73,7 @@ let mainView, promptEditorView, chainEditorView, variableInputView, contentList,
     flowNameInput, flowTagsInput, flowTextInput, flowSeparatorDisplay, saveFlowBtn, cancelFlowBtn,
     variableFieldsContainer, executeVariablePromptBtn,
     cancelVariableInputBtn, exportBtn, importBtn, importFileInput,
-    quickThemeToggleBtn, chainDelayInput, chainDelayDisplay, flowSeparatorInput, searchAddContainer,
+    quickThemeToggleBtn, backBtn, chainDelayInput, chainDelayDisplay, flowSeparatorInput, searchAddContainer,
     showTagsFilterInput, accentColorSelect, customAccentColorInput;
 let favoritesToggleBtn, tagsFilterContainer;
 
@@ -126,6 +128,7 @@ const queryElements = () => {
     importBtn = document.getElementById('import-btn');
     importFileInput = document.getElementById('import-file');
     quickThemeToggleBtn = document.getElementById('quick-theme-toggle');
+    backBtn = document.getElementById('back-btn');
     chainDelayInput = document.getElementById('chain-delay');
     chainDelayDisplay = document.getElementById('chain-delay-display');
     flowSeparatorInput = document.getElementById('flow-separator');
@@ -180,6 +183,11 @@ const render = () => {
     chainEditorView.classList.toggle('hidden', state.currentView !== 'chainEditor');
     flowEditorView.classList.toggle('hidden', state.currentView !== 'flowEditor');
     variableInputView.classList.toggle('hidden', state.currentView !== 'variableInput');
+    if (backBtn) {
+        backBtn.innerHTML = ICON_BACK;
+        const showBack = state.viewHistory.length > 0 && !isMainView;
+        backBtn.classList.toggle('hidden', !showBack);
+    }
     searchAddContainer.classList.toggle('hidden', !isMainView || state.currentView === 'settings');
     if (tagsFilterContainer) {
         const hide = !isMainView || state.currentView === 'settings' || !state.showTagsFilter;
@@ -401,8 +409,24 @@ const handleTagFilterClick = (e) => {
     saveUIState();
     render();
 };
+
+const navigateTo = (view, fromHistory = false) => {
+    if (!fromHistory && view !== state.currentView) {
+        state.viewHistory.push(state.currentView);
+        if (state.viewHistory.length > 10) state.viewHistory.shift();
+    }
+    state.currentView = view;
+};
+
+const handleBackClick = () => {
+    if (state.viewHistory.length === 0) return;
+    const prev = state.viewHistory.pop();
+    navigateTo(prev, true);
+    render();
+    saveUIState();
+};
 const handleNavClick = (v) => {
-    state.currentView = v;
+    navigateTo(v);
     showPromptsBtn.classList.toggle('active', v === 'prompts');
     showChainsBtn.classList.toggle('active', v === 'chains');
     showFlowsBtn.classList.toggle('active', v === 'flows');
@@ -412,7 +436,7 @@ const handleNavClick = (v) => {
 };
 const handleAddNew = () => {
     if (state.currentView === 'prompts') {
-        state.currentView = 'promptEditor';
+        navigateTo('promptEditor');
         state.editingPromptId = null;
         promptEditorTitle.textContent = 'Prompt erstellen';
         promptForm.reset();
@@ -420,7 +444,7 @@ const handleAddNew = () => {
         render();
         autoResizeTextarea(promptTextInput);
     } else if (state.currentView === 'chains') {
-        state.currentView = 'chainEditor';
+        navigateTo('chainEditor');
         state.chainBeingEdited = { id: null, name: '', tags: [], prompts: [{ text: '' }], isFavorite: false };
         chainEditorTitle.textContent = 'Chain erstellen';
         chainNameInput.value = '';
@@ -428,7 +452,7 @@ const handleAddNew = () => {
         renderChainPromptInputs();
         render();
     } else if (state.currentView === 'flows') {
-        state.currentView = 'flowEditor';
+        navigateTo('flowEditor');
         flowEditorTitle.textContent = 'Flow erstellen';
         flowForm.reset();
         flowIdInput.value = '';
@@ -469,7 +493,7 @@ const handleListClick = async (e) => {
             } else {
                 state.pendingExecution = { type: 'prompt', data: p };
                 renderVariableInputs(v);
-                state.currentView = 'variableInput';
+                navigateTo('variableInput');
                 render();
             }
         } else if (action === 'run-chain') {
@@ -489,13 +513,13 @@ const handleListClick = async (e) => {
             } else {
                 state.pendingExecution = { type: 'chain', data: c };
                 renderVariableInputs(v);
-                state.currentView = 'variableInput';
+                navigateTo('variableInput');
                 render();
             }
         } else if (action === 'edit-prompt') {
             const p = state.prompts.find(p => p.id === id);
             if (!p) return;
-            state.currentView = 'promptEditor';
+            navigateTo('promptEditor');
             state.editingPromptId = id;
             promptEditorTitle.textContent = 'Prompt bearbeiten';
             promptIdInput.value = p.id;
@@ -509,7 +533,7 @@ const handleListClick = async (e) => {
             const c = state.chains.find(c => c.id === id);
             if (!c) return;
             state.chainBeingEdited = JSON.parse(JSON.stringify(c));
-            state.currentView = 'chainEditor';
+            navigateTo('chainEditor');
             chainEditorTitle.textContent = 'Chain bearbeiten';
             chainNameInput.value = c.name;
             if (chainTagsInput) chainTagsInput.value = (c.tags || []).join(', ');
@@ -531,13 +555,13 @@ const handleListClick = async (e) => {
             } else {
                 state.pendingExecution = { type: 'flow', data: f, steps };
                 renderVariableInputs(vars);
-                state.currentView = 'variableInput';
+                navigateTo('variableInput');
                 render();
             }
         } else if (action === 'edit-flow') {
             const f = state.flows.find(fl => fl.id === id);
             if (!f) return;
-            state.currentView = 'flowEditor';
+            navigateTo('flowEditor');
             flowEditorTitle.textContent = 'Flow bearbeiten';
             flowIdInput.value = f.id;
             flowNameInput.value = f.name;
@@ -978,6 +1002,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     searchBox.addEventListener('input', handleSearchInput);
     if (favoritesToggleBtn) favoritesToggleBtn.addEventListener('click', handleFavoritesToggle);
     if (tagsFilterContainer) tagsFilterContainer.addEventListener('click', handleTagFilterClick);
+    if (backBtn) backBtn.addEventListener('click', handleBackClick);
     savePromptBtn.addEventListener('click', handleSavePrompt);
     cancelPromptBtn.addEventListener('click', () => { state.editingPromptId = null; handleNavClick('prompts'); });
     saveChainBtn.addEventListener('click', handleSaveChain);
