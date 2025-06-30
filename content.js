@@ -335,21 +335,20 @@
         if (platform === 'chatgpt') {
             msgs = document.querySelectorAll('div[data-message-author-role="assistant"]');
         } else if (platform === 'gemini') {
-            // Gemini uses various containers for the assistant response text.
-            // Try several selectors in order of reliability.
-            msgs = document.querySelectorAll('div[aria-label="Assistant response"]');
-            if (!msgs || msgs.length === 0) {
-                msgs = document.querySelectorAll('.model-response-text');
-            }
-            if (!msgs || msgs.length === 0) {
-                msgs = document.querySelectorAll('.response-container div.markdown-text');
-            }
+            // Updated selector logic for Gemini. We directly target the
+            // assistant message containers and then drill down to the
+            // element holding the rendered markdown text.
+            msgs = document.querySelectorAll('message-content.model-response-text');
         }
 
         if (msgs && msgs.length > 0) {
-            const last = msgs[msgs.length - 1];
-            const textEl = last.querySelector('.markdown-text, .model-response-text') || last;
-            return textEl ? (textEl.innerText || textEl.textContent || '') : '';
+            const lastMessageContainer = msgs[msgs.length - 1];
+            if (lastMessageContainer) {
+                const actualTextContentDiv = lastMessageContainer.querySelector('div.markdown.markdown-main-panel');
+                if (actualTextContentDiv) {
+                    return actualTextContentDiv.innerText || actualTextContentDiv.textContent || '';
+                }
+            }
         }
 
         console.warn("DEBUG content.js: No assistant messages found for platform", platform);
