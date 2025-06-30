@@ -36,12 +36,10 @@
                 if (btn) return btn;
             }
         } else if (platform === 'gemini') {
-            const geminiSelectors = [
-                'button[aria-label="Senden"]',
-                'button[data-tooltip-id="send-button-tooltip"]',
-                'button[jsaction*="submit"]'
-            ];
-            for (const sel of geminiSelectors) {
+            for (const sel of [
+                'button[aria-label="Nachricht senden"]',
+                'button.send-button.submit'
+            ]) {
                 const btn = document.querySelector(sel);
                 if (btn) return btn;
             }
@@ -52,9 +50,9 @@
     const getInputArea = () => {
         const platform = getCurrentPlatform();
         if (platform === 'chatgpt') {
-            return document.querySelector('#prompt-textarea, div[contenteditable="true"]');
+            return document.querySelector('#prompt-textarea');
         } else if (platform === 'gemini') {
-            return document.querySelector('div[contenteditable][aria-label="Your message"]');
+            return document.querySelector('div.ql-editor[contenteditable="true"][aria-label="Prompt hier eingeben"]');
         }
         return null;
     };
