@@ -60,10 +60,7 @@
             return document.querySelector('button[data-testid="stop-button"]');
         } else if (platform === 'gemini') {
             return document.querySelector('button[aria-label="Stop generating"]') ||
-                   document.querySelector('button[aria-label*="Stop"]') ||
-                   document.querySelector('button[aria-label="Cancel"]') ||
                    document.querySelector('mat-icon[fonticon="magic_button_loading"]') ||
-                   document.querySelector('[data-loading-indicator]') ||
                    document.querySelector('div[data-response-status="generating"]');
         }
         return null;
@@ -73,26 +70,40 @@
      * Finale, korrekte Kernlogik: Wartet auf das Erscheinen und Verschwinden des Stop-Buttons.
      * @param {function} onFinishCallback - Die Funktion, die nach Erfolg aufgerufen wird.
      */
-    const waitForCompletion = (onFinishCallback, timeoutMs = 60000) => {
+    const waitForCompletion = (onFinishCallback) => {
         let hasGenerationStarted = false;
         const startTime = Date.now();
+        const timeoutMs = 60 * 1000; // 60 seconds timeout
+        let platformChecked = false; // To log platform only once
 
         const intervalId = setInterval(() => {
+            if (!platformChecked) {
+                console.log("DEBUG content.js: waitForCompletion started for platform:", getCurrentPlatform());
+                platformChecked = true;
+            }
+
             const stopIndicator = getStopIndicator();
+            console.log(`DEBUG content.js: waitForCompletion loop. hasGenerationStarted: ${hasGenerationStarted}, StopIndicator present: ${!!stopIndicator}. Time elapsed: ${((Date.now() - startTime) / 1000).toFixed(1)}s`);
 
             if (!hasGenerationStarted && stopIndicator) {
                 hasGenerationStarted = true;
+                console.log("DEBUG content.js: AI generation (Gemini) started (stop indicator appeared).");
             }
 
             if (hasGenerationStarted && !stopIndicator) {
+                console.log("DEBUG content.js: AI generation (Gemini) completed (stop indicator disappeared).");
                 clearInterval(intervalId);
                 onFinishCallback();
-            } else if (Date.now() - startTime > timeoutMs) {
-                console.error("DEBUG content.js: AI generation timed out after 60 seconds.");
+                return;
+            }
+
+            if (Date.now() - startTime > timeoutMs) {
+                console.error("DEBUG content.js: AI generation (Gemini) timed out after 60 seconds. Aborting completion wait.");
                 clearInterval(intervalId);
-                try { chrome.runtime.sendMessage({ type: 'execution-error', message: 'AI generation timed out on content.js side.' }); } catch(e) {}
+                try { chrome.runtime.sendMessage({ type: 'execution-error', message: 'AI generation timed out on content.js side (Gemini).' }); } catch(e) {}
                 isExecuting = false;
                 onFinishCallback();
+                return;
             }
         }, 200);
     };
@@ -135,7 +146,10 @@
             if (submitButton && !submitButton.disabled) {
                 console.log("DEBUG content.js: Send button FOUND and enabled. Clicking now!", submitButton);
                 submitButton.click();
-                waitForCompletion(onFinishCallback);
+                waitForCompletion(() => {
+                    console.log("DEBUG content.js: !!! ONFINISH CALLBACK TRIGGERED !!!");
+                    if (onFinishCallback) onFinishCallback();
+                });
             } else if (attempts < MAX_ATTEMPTS) {
                 console.log(`DEBUG content.js: Send button not yet found or disabled. Retrying... (Attempt ${attempts + 1}/${MAX_ATTEMPTS})`);
                 setTimeout(() => findAndClickSendButton(attempts + 1), RETRY_DELAY_MS);
