@@ -652,7 +652,7 @@ const executeFlowStep = (text, step, total, refs = []) => {
     });
 };
 const executeInContentScript = (d) => {
-    const isChatGptUrl = (url) => /^https:\/\/(chat\.openai\.com|chatgpt\.com)\//.test(url || '');
+    const isChatGptUrl = (url) => /^https:\/\/(chat\.openai\.com|chatgpt\.com|gemini\.google\.com|bard\.google\.com)\//.test(url || '');
 
     const injectIntoTab = (tab) => {
         if (tab && typeof tab.id === 'number') {
@@ -700,7 +700,9 @@ const executeInContentScript = (d) => {
             const queryOptions = {
                 url: [
                     "https://chat.openai.com/*",
-                    "https://chatgpt.com/*"
+                    "https://chatgpt.com/*",
+                    "https://gemini.google.com/*",
+                    "https://bard.google.com/*"
                 ]
             };
 

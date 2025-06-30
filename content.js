@@ -12,6 +12,16 @@
     }
 
     // --- DOM-Helfer ---
+    const getCurrentPlatform = () => {
+        if (window.location.hostname.includes('chat.openai.com') || window.location.hostname.includes('chatgpt.com')) {
+            return 'chatgpt';
+        }
+        if (window.location.hostname.includes('gemini.google.com') || window.location.hostname.includes('bard.google.com')) {
+            return 'gemini';
+        }
+        return null;
+    };
+
     const SUBMIT_BUTTON_SELECTORS = [
         'button[data-testid="send-button"]',
         'button[aria-label="Send message"]'
@@ -19,16 +29,40 @@
     ];
 
     const getSubmitButton = () => {
-        for (const sel of SUBMIT_BUTTON_SELECTORS) {
-            const btn = document.querySelector(sel);
-            if (btn) return btn;
+        const platform = getCurrentPlatform();
+        if (platform === 'chatgpt') {
+            for (const sel of SUBMIT_BUTTON_SELECTORS) {
+                const btn = document.querySelector(sel);
+                if (btn) return btn;
+            }
+        } else if (platform === 'gemini') {
+            const geminiSelectors = [
+                'button[aria-label="Senden"]',
+                'button[data-tooltip-id="send-button-tooltip"]',
+                'button[jsaction*="submit"]'
+            ];
+            for (const sel of geminiSelectors) {
+                const btn = document.querySelector(sel);
+                if (btn) return btn;
+            }
         }
         return null;
     };
-    // Selector for the ChatGPT input field (now a contenteditable div)
-    const getInputArea = () => document.querySelector('div[contenteditable="true"]');
-    // Der datenbasierte Selektor für den Stop-Button
+    // Selector for the ChatGPT input field (now a contenteditable div) or Gemini's field
+    const getInputArea = () => {
+        const platform = getCurrentPlatform();
+        if (platform === 'chatgpt') {
+            return document.querySelector('#prompt-textarea, div[contenteditable="true"]');
+        } else if (platform === 'gemini') {
+            return document.querySelector('div[contenteditable][aria-label="Your message"]');
+        }
+        return null;
+    };
+    // Der datenbasierte Selektor für den Stop-Button (ChatGPT)
     const getStopButton = () => document.querySelector('button[data-testid="stop-button"]');
+    const getGeminiStopIndicator = () =>
+        document.querySelector('button[aria-label="Stop generating"]') ||
+        document.querySelector('[data-loading-indicator]');
 
     /**
      * Finale, korrekte Kernlogik: Wartet auf das Erscheinen und Verschwinden des Stop-Buttons.
@@ -38,15 +72,21 @@
         let hasGenerationStarted = false; // Merker, ob der Stop-Button schon einmal gesehen wurde.
         
         const intervalId = setInterval(() => {
-            const stopButton = getStopButton();
+            const platform = getCurrentPlatform();
+            let stopIndicator = null;
+            if (platform === 'chatgpt') {
+                stopIndicator = getStopButton();
+            } else if (platform === 'gemini') {
+                stopIndicator = getGeminiStopIndicator();
+            }
 
             // Phase 1: Warten, bis der Stop-Button erscheint. Das bestätigt den Start der Generierung.
-            if (!hasGenerationStarted && stopButton) {
+            if (!hasGenerationStarted && stopIndicator) {
                 hasGenerationStarted = true;
             }
 
             // Phase 2: Warten, bis der erschienene Stop-Button wieder verschwindet. Das bestätigt das Ende.
-            if (hasGenerationStarted && !stopButton) {
+            if (hasGenerationStarted && !stopIndicator) {
                 clearInterval(intervalId); // Polling beenden
                 onFinishCallback();      // Erfolgs-Callback ausführen
             }
@@ -252,14 +292,25 @@
         setTimeout(() => { if (c.parentNode) c.remove(); }, 300);
     };
 
+    const getLastAssistantMessage = () => {
+        const platform = getCurrentPlatform();
+        let msgs = null;
+        if (platform === 'chatgpt') {
+            msgs = document.querySelectorAll('div[data-message-author-role="assistant"]');
+        } else if (platform === 'gemini') {
+            msgs = document.querySelectorAll('[aria-label="Assistant response"]');
+        }
+        if (msgs && msgs.length > 0) {
+            const last = msgs[msgs.length - 1];
+            return last ? (last.innerText || last.textContent || '') : '';
+        }
+        console.warn("DEBUG content.js: No assistant messages found for platform", platform);
+        return '';
+    };
+
     const getChatMessageContent = (referenceType) => {
         if (referenceType === 'LAST_GPT_MSG') {
-            const assistantMessages = document.querySelectorAll('div[data-message-author-role="assistant"]');
-            const lastAssistantMessage = assistantMessages[assistantMessages.length - 1];
-            if (lastAssistantMessage) {
-                return lastAssistantMessage.innerText || '';
-            }
-            console.warn("DEBUG content.js: <LAST_GPT_MSG> requested but no assistant messages found in DOM.");
+            return getLastAssistantMessage();
         }
         return '';
     };
@@ -267,7 +318,7 @@
     const resolveReferences = (text, refs) => {
         let processed = text;
         if (refs && refs.includes('LAST_GPT_MSG')) {
-            const last = getChatMessageContent('LAST_GPT_MSG');
+            const last = getLastAssistantMessage();
             processed = processed.replace(/<LAST_GPT_MSG>/g, last);
             console.log('DEBUG content.js: <LAST_GPT_MSG> resolved. Processed text:', processed);
         }
@@ -321,7 +372,7 @@
         updateStatusOverlay(step, total);
         const processed = resolveReferences(text, resolvedReferences);
         submitPrompt(processed, () => {
-            const output = getChatMessageContent('LAST_GPT_MSG');
+            const output = getLastAssistantMessage();
             const finish = () => {
                 isExecuting = false;
                 if (step === total) {
